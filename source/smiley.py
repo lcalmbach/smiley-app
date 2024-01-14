@@ -131,6 +131,7 @@ class Smiley:
     def get_data(self):
         if not os.path.exists(PARQUET_FILE):
             with st.spinner("Daten werden geladen..."):
+                st.write(os.path.exists(PARQUET_FILE), PARQUET_FILE)
                 data = pd.read_csv(CSV_FILE, sep=";")
                 data["messung_datum"] = pd.to_datetime(
                     data["messung_datum"], errors="coerce"
