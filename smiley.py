@@ -206,10 +206,10 @@ class Smiley:
                         sharing="streamlit",
                         theme="streamlit",
                     )
-            if len(self.filtered_stations) > MAX_STATIONS:
-                st.markdown(
-                    f"Es werden nur die ersten {MAX_STATIONS} Stationen angezeigt. Bitte filtern Sie die Daten, um die Anzahl Stationen zu reduzieren."
-                )
+        if len(self.filtered_stations) > MAX_STATIONS:
+            st.markdown(
+                f"Es werden nur die ersten {MAX_STATIONS} Stationen angezeigt. Bitte filtern Sie die Daten, um die Anzahl Stationen zu reduzieren."
+            )
     def info(self):
         st.image("./assets/splash.jpg", width=1000)
         st.markdown(INFO, unsafe_allow_html=True)

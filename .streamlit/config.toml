@@ -1,2 +1,2 @@
-[server]
-maxMessageSize = 600
+[theme]
+base = "dark"
