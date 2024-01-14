@@ -1,0 +1,8 @@
+INFO = """# Smiley-App
+
+Smiley-Geschwindigkeitsanzeigen sind eine Massnahme zur Erhöhung der Verkehrssicherheit. Die Wechselanzeigen von Geschwindigkeit und Smiley-Symbol (Lob oder Tadel) ohne Repression weisen auf freundliche Weise auf korrektes Fahrverhalten oder Über-schreiten des Tempolimits hin. Ab Anfang Februar 2023 nahmen 20 neu beschaffte Geräte ihren Betrieb auf. Die neuen Geräte sind flexibler einsetzbar und die Stromversorgung wird über Batterien sichergestellt, wodurch neue Standorte genutzt werden können. Daher wurde eine ausführliche Standortevaluation mit der Unterstützung von Fachexpertinnen und -experten aus der Kantonsverwaltung und Hinweisen aus der Bevölkerung durchgeführt. Ein besonderer Fokus lag bei der Standortauswahl auf sensiblen Örtlichkeiten (wie Kindergärten, Schulen, Altersheime etc.). Insgesamt konnten 75 Standorte festgelegt.
+
+Die Einsatzplanung sieht vor, dass die 20 Smiley-Geschwindigkeitsanzeigen für jeweils fünf Monate an einem Standort aufgestellt werden. Sie rotieren zwischen den verschiedenen Standorten. Geplant messen sie ab Februar 2023 einen Monat die Geschwindigkeiten mit ausgeschalteter Anzeige. Ab März 2023 werden die Smiley-Geschwindigkeitsanzeigen für drei Monate aktiv geschaltet. Im Anschluss messen die Geräte nochmals einen Monat mit ausgeschalteter Anzeige. Dieses Vorgehen wird bei den zukünftigen Einsätzen wiederholt und dient der Evaluation und Wirksamkeitsanalyse.
+
+Die gesammelten Daten können als Anstoss für Massnahmen der Verkehrssicherheit dienen. [aus Medienmitteilung JSD des Kantons Basel-Stadt](https://www.jsd.bs.ch/nm/2023-start-des-betriebs-der-neuen-praeventiven-smiley-geschwindigkeitsanzeigen---ab-maerz-2023-aktiv-jsd.html)
+"""
