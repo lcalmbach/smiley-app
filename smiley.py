@@ -6,20 +6,20 @@ import pandas as pd
 from enum import Enum
 from scipy import stats
 
-from plots import histogram, boxplot
+from plots import histogram, boxplot, scatter
 from texts import INFO
 from utils import optimize_dataframe_types
 
 PARQUET_FILE = "./data/100268.parquet"
 CSV_FILE = "./data/100268.csv"
 CSV_STATIONS_FILE = "./data/100286.csv"
-MAX_STATIONS = 10
+MAX_STATIONS = 20
 
 menu_options = [
     "Über die App",
     "Vergleich Geschw. Einfahrt/Ausfahrt",
 ]
-phase_options = ["Alle", "Vormessung", "Betrieb", "Nachmessung"]
+phase_options = ["Betrieb", "Vormessung", "Nachmessung"]
 time_options = ["07:00-19:59h", "20:00-06:59h"]
 time2_options = dict(zip(range(24), [f"x{x}:00-{x}:59h" for x in range(24)]))
 weekday_options = ["Montag-Freitag", "Samstag-Sonntag"]
@@ -40,7 +40,7 @@ weekday2_options = {
     6: "Sonntag",
 }
 month_options = range(1, 13)
-plot_options = ["Histogramm", "Boxplot"]
+plot_options = ["Histogramm", "Boxplot", "XY"]
 
 
 class Smiley:
@@ -69,22 +69,15 @@ class Smiley:
         )
         return aggregated_df
 
-    def perform_paired_t_test(data, col_before, col_after):
+    def perform_paired_t_test(self, data, col_before, col_after):
+        st.write(col_before, col_after, data.head(500))
         # Perform the paired t-test
         t_stat, p_value = stats.ttest_rel(data[col_before], data[col_after])
 
-        # Print the results
-        print(f"T-statistic: {t_stat}")
-        print(f"P-value: {p_value}")
-
         # Interpret the p-value
         alpha = 0.05
-        if p_value < alpha:
-            print("Reject the null hypothesis - suggest the means are different")
-        else:
-            print(
-                "Fail to reject the null hypothesis - suggest the means are not different"
-            )
+        h0_rejected = p_value < alpha
+        return t_stat, p_value, h0_rejected
 
     def filter_data(self, keys: list):
         filtered_data = self.data
@@ -109,8 +102,8 @@ class Smiley:
                     format_func=lambda x: self.station_options[x],
                 )
                 if sel_stations:
-                    filtered_stations = self.stations[
-                        self.stations["idstandort"].isin(sel_stations)
+                    filtered_stations = filtered_stations[
+                        filtered_stations["idstandort"].isin(sel_stations)
                     ]
             if len(filtered_stations) < len(self.stations):
                 filtered_data = self.data[
@@ -121,17 +114,13 @@ class Smiley:
             # measurement filters
             if "phase" in keys:
                 sel_phase = st.selectbox("Phase", phase_options)
-                if phase_options.index(sel_phase) > 0:
-                    filtered_data = filtered_data[
-                        self.filtered_data["phase"] == sel_phase
-                    ]
+                filtered_data = filtered_data[filtered_data["phase"] == sel_phase]
 
         return filtered_data, filtered_stations
 
     def get_data(self):
         if not os.path.exists(PARQUET_FILE):
             with st.spinner("Daten werden geladen..."):
-                st.write(os.path.exists(PARQUET_FILE), PARQUET_FILE)
                 data = pd.read_csv(CSV_FILE, sep=";")
                 data["messung_datum"] = pd.to_datetime(
                     data["messung_datum"], errors="coerce"
@@ -168,16 +157,42 @@ class Smiley:
                     settings[plot] = st.checkbox(plot, value=True)
         return settings
 
+    def get_chart(self, df, melted_df: pd.DataFrame, plot: str):
+        chart = None
+        plot_settings = {"x": "v_einfahrt"}
+        if plot == plot_options[0]:
+            chart = histogram(melted_df, plot_settings)
+        elif plot == plot_options[1]:
+            chart = boxplot(melted_df, plot_settings)
+        elif plot == plot_options[2]:
+            plot_settings = {
+                "x": "v_einfahrt",
+                "y": "v_ausfahrt",
+                "x_title": "V Einfahrt (km/h)",
+                "y_title": "V Ausfahrt (km/h))",
+            }
+            chart = scatter(df, plot_settings)
+        return chart
+
     def show_phase_comparison(self):
+        """
+        Displays the phase comparison for selected stations.
+
+        This method filters the data based on selected filters, retrieves the settings for plots,
+        and then displays the phase comparison for each station.
+
+        Parameters:
+        None
+
+        Returns:
+        None
+        """
         filters = ["locations", "velocity", "stations", "phase", "weekday", "day-time"]
         self.filtered_data, self.filtered_stations = self.filter_data(filters)
         settings = self.get_settings(["plots"])
-        
-        for station in list(self.filtered_stations["idstandort"])[:MAX_STATIONS + 1]:
-            st_name = self.stations[self.stations["idstandort"] == station].iloc[0]
-            st.markdown(
-                f"{st_name['strname']} {st_name['hausnr']} (id={st_name['idstandort']}) Höchstgeschwindigkeit: {st_name['geschwind']} km/h"
-            )
+        plots = [x for x in plot_options if settings[x]]
+
+        for station in list(self.filtered_stations["idstandort"])[: MAX_STATIONS + 1]:
             data = self.filtered_data[self.filtered_data["id_standort"] == station]
             melted_df = pd.melt(
                 data[["id_standort", "v_einfahrt", "v_ausfahrt"]],
@@ -185,31 +200,28 @@ class Smiley:
                 var_name="parameter",
                 value_name="value",
             )
-            if settings[plot_options[0]] and settings[plot_options[1]]:
-                cols = st.columns(2)
-                with cols[0]:
-                    plot_settings = {"x": "v_einfahrt"}
-                    chart = histogram(melted_df, plot_settings)
+            st_name = self.stations[self.stations["idstandort"] == station].iloc[0]
+            st.markdown(
+                f"{st_name['strname']} {st_name['hausnr']} (id={st_name['idstandort']}) Höchstgeschwindigkeit: {st_name['geschwind']} km/h, {len(data)} Messungen."
+            )
+            col_index = 0
+            cols = st.columns(2 if len(plots) > 1 else 1)
+            for plot in plots:
+                with cols[col_index]:
+                    chart = self.get_chart(data, melted_df, plot)
                     st.plotly_chart(
                         chart,
                         use_container_width=True,
                         sharing="streamlit",
                         theme="streamlit",
                     )
+                    col_index = 0 if col_index == 1 else 1
 
-                with cols[1]:
-                    plot_settings = {"title": "Vergleich Einfahrt/Ausfahrt"}
-                    chart = boxplot(melted_df, plot_settings)
-                    st.plotly_chart(
-                        chart,
-                        use_container_width=True,
-                        sharing="streamlit",
-                        theme="streamlit",
-                    )
         if len(self.filtered_stations) > MAX_STATIONS:
             st.markdown(
                 f"Es werden nur die ersten {MAX_STATIONS} Stationen angezeigt. Bitte filtern Sie die Daten, um die Anzahl Stationen zu reduzieren."
             )
+
     def info(self):
         st.image("./assets/splash.jpg", width=1000)
         st.markdown(INFO, unsafe_allow_html=True)
