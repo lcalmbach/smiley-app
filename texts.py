@@ -6,3 +6,5 @@ Die Einsatzplanung sieht vor, dass die 20 Smiley-Geschwindigkeitsanzeigen für j
 
 Die gesammelten Daten können als Anstoss für Massnahmen der Verkehrssicherheit dienen. [aus Medienmitteilung JSD des Kantons Basel-Stadt](https://www.jsd.bs.ch/nm/2023-start-des-betriebs-der-neuen-praeventiven-smiley-geschwindigkeitsanzeigen---ab-maerz-2023-aktiv-jsd.html)
 """
+
+STAT_TEXT = "An den selektierten Stationen wurden insgesamt {0} Messungen durchgeführt. Bei {1} von {2} Standorten ging die Anzahl der Geschwindkeitsüberschreitungen im Betrieb bei der zurück. Bei {3} Standorten nahm die Anzahl der Geschwindkeitsüberschreitungen bei der Ausfahrt gegenüber der Einfahrt ab. Während der Vormessungs- und Nachmessungs-Phase betrug der prozentuale Anteil der Geschwindigkeits-Zunahmen im Durchschnitt {4} %."
