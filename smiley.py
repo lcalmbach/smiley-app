@@ -102,6 +102,25 @@ class Smiley:
         return filtered_data, filtered_stations
 
     def get_data(self):
+        def remove_outliers(df: pd.DataFrame):
+            """
+            Remove outliers from a DataFrame based on the 'v_einfahrt' column.
+
+            Args:
+                df (pd.DataFrame): The input DataFrame.
+
+            Returns:
+                pd.DataFrame: The cleaned DataFrame with outliers removed.
+            """
+            cleaned_df = pd.DataFrame()
+            df["v_max"] = df[["v_einfahrt", "v_ausfahrt"]].max(axis=1)
+            for station in df["id_standort"].unique():
+                data = df[df["id_standort"] == station]
+                data = data[np.abs(stats.zscore(data["v_max"])) < 3]
+                cleaned_df = pd.concat([cleaned_df, data])
+            st.info(f"{len(df)-len(cleaned_df)} rows removed.")
+            return cleaned_df
+
         if not os.path.exists(PARQUET_FILE):
             with st.spinner("Daten werden geladen..."):
                 data = pd.read_csv(CSV_FILE, sep=";")
@@ -123,6 +142,7 @@ class Smiley:
                 data = data[fields]
                 data = optimize_dataframe_types(data)
                 data["phase"] = data["phase"].astype("category")
+                data = remove_outliers(data)
                 data.to_parquet(PARQUET_FILE)
         data = pd.read_parquet(PARQUET_FILE)
         # memory = data.memory_usage(deep=True).sum()
@@ -134,12 +154,15 @@ class Smiley:
         stations = stations[stations["id_standort"].isin(stations_with_data)]
         return data, stations
 
-    def get_chart(self, df, melted_df: pd.DataFrame, plot: str):
+    def get_chart(self, df, melted_df: pd.DataFrame, velocity: float, plot: str):
         chart = None
         plot_settings = {"x": "v_einfahrt"}
+
         if plot == plot_options[0]:
+            plot_settings = {"x": "v_einfahrt", "v_line": {"x": velocity}}
             chart = histogram(melted_df, plot_settings)
         elif plot == plot_options[1]:
+            plot_settings = {"x": "v_einfahrt", "h_line": {"y": velocity}}
             chart = boxplot(melted_df, plot_settings)
         elif plot == plot_options[2]:
             plot_settings = {
@@ -169,7 +192,10 @@ class Smiley:
             settings = {}
             with st.sidebar.expander("⚙️ Settings", expanded=True):
                 if "plots" in keys:
-                    for plot in plot_options:
+                    available_plots = plot_options
+                    if len(self.filtered_stations) > 2 and "XY" in available_plots:
+                        available_plots.remove("XY")
+                    for plot in available_plots:
                         settings[plot] = st.checkbox(plot, value=True)
             return settings
 
@@ -201,7 +227,7 @@ class Smiley:
             cols = st.columns(2 if len(plots) > 1 else 1)
             for plot in plots:
                 with cols[col_index]:
-                    chart = self.get_chart(data, melted_df, plot)
+                    chart = self.get_chart(data, melted_df, st_name["geschwind"], plot)
                     st.plotly_chart(
                         chart,
                         use_container_width=True,
@@ -217,25 +243,38 @@ class Smiley:
 
     def info(self):
         st.image("./assets/splash.jpg", width=1000)
-        st.markdown(INFO, unsafe_allow_html=True)
+        cols = st.columns([1, 4, 1])
+        with cols[1]:
+            st.markdown(INFO, unsafe_allow_html=True)
 
     def show_statistics(self):
         def get_text(merged_df):
-                betrieb_df = merged_df[merged_df['phase'] == 'Betrieb']
-                num_tot = merged_df['anz'].sum()
-                num_stations = len(betrieb_df['id_standort'].unique())
-                num_reduction_exceedance = len(betrieb_df[betrieb_df['uebertretung_ausfahrt_median'] < betrieb_df['uebertretung_einfahrt_median']])
+            betrieb_df = merged_df[merged_df["phase"] == "Betrieb"]
+            num_tot = merged_df["anz"].sum()
+            num_stations = len(betrieb_df["id_standort"].unique())
+            num_reduction_exceedance = len(
+                betrieb_df[
+                    betrieb_df["uebertretung_ausfahrt_median"]
+                    < betrieb_df["uebertretung_einfahrt_median"]
+                ]
+            )
 
-                text = STAT_TEXT.format(num_tot, num_reduction_exceedance, num_stations, -99, -999)
-                return text
-        
+            text = STAT_TEXT.format(
+                num_tot, num_reduction_exceedance, num_stations, -99, -999
+            )
+            return text
+
         def get_settings(fields: list):
             settings = {}
-            settings['fields'] = fields
+            settings["fields"] = fields
             with st.sidebar.expander("⚙️ Settings", expanded=True):
-                flds = st.multiselect("Felder", options=fields, help="Felder, die angezeigt werden sollen. Wenn keine Felder ausgewählt werden, werden alle Felder angezeigt.")
+                flds = st.multiselect(
+                    "Felder",
+                    options=fields,
+                    help="Felder, die angezeigt werden sollen. Wenn keine Felder ausgewählt werden, werden alle Felder angezeigt.",
+                )
                 if len(flds) > 0:
-                    settings['fields'] = flds
+                    settings["fields"] = flds
             return settings
 
         def get_stats():
@@ -244,8 +283,12 @@ class Smiley:
             df["diff_einfahrt_ausfahrt"] = df["v_einfahrt"] - df["v_ausfahrt"]
             df["uebertretung_einfahrt"] = df["v_einfahrt"] - df["geschwindigkeit"]
             df["uebertretung_ausfahrt"] = df["v_ausfahrt"] - df["geschwindigkeit"]
-            df['ist_uebertretung_einfahrt'] = np.where(df['v_einfahrt'] > df['geschwindigkeit'], 1, 0)
-            df['ist_uebertretung_ausfahrt'] = np.where(df['v_ausfahrt'] > df['geschwindigkeit'], 1, 0)
+            df["ist_uebertretung_einfahrt"] = np.where(
+                df["v_einfahrt"] > df["geschwindigkeit"], 1, 0
+            )
+            df["ist_uebertretung_ausfahrt"] = np.where(
+                df["v_ausfahrt"] > df["geschwindigkeit"], 1, 0
+            )
 
             aggregated_df = df.groupby(["id_standort", "phase"]).agg(
                 {
@@ -280,8 +323,16 @@ class Smiley:
             # convert multiindex to single index
             aggregated_df.columns = ["_".join(x) for x in aggregated_df.columns.ravel()]
             aggregated_df.rename(columns={"v_einfahrt_count": "anz"}, inplace=True)
-            aggregated_df['ist_uebertretung_einfahrt_pct'] = aggregated_df['ist_uebertretung_einfahrt_sum'] / aggregated_df['anz'] * 100
-            aggregated_df['ist_uebertretung_ausfahrt_pct'] = aggregated_df['ist_uebertretung_ausfahrt_sum'] / aggregated_df['anz'] * 100
+            aggregated_df["ist_uebertretung_einfahrt_pct"] = (
+                aggregated_df["ist_uebertretung_einfahrt_sum"]
+                / aggregated_df["anz"]
+                * 100
+            )
+            aggregated_df["ist_uebertretung_ausfahrt_pct"] = (
+                aggregated_df["ist_uebertretung_ausfahrt_sum"]
+                / aggregated_df["anz"]
+                * 100
+            )
             aggregated_df.reset_index(inplace=True)
 
             return aggregated_df
@@ -318,11 +369,14 @@ class Smiley:
         ]
         fields = [x for x in fields if x not in el_to_remove]
         settings = get_settings(fields)
-        
+
         st.markdown(f"### {len(merged_df['id_standort'].unique())} Standorte")
-        st.dataframe(merged_df[el_to_remove + settings['fields']], height=600)
-        text = get_text(merged_df)
-        st.markdown(text)
+        tabs = st.tabs(['Tabelle', 'Beschreibung'])
+        with tabs[0]:
+            st.dataframe(merged_df[el_to_remove + settings["fields"]], height=600, hide_index=True)
+        with tabs[1]:
+            text = get_text(merged_df)
+            st.markdown(text)
 
     def show_gui(self):
         st.sidebar.title("smiley-app-bs 😃 😐 🤬")

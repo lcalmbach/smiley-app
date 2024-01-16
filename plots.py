@@ -51,18 +51,39 @@ def histogram(df: pd.DataFrame, settings: dict):
         x="value",
         color="parameter",
         barmode="overlay",
-        nbins=30,
+        nbins=50,
         opacity=0.5,
         labels={"value": "value"},
         title=settings["title"],
     )
-
+    if "v_line" in settings:
+        fig.add_shape(
+            type="line",
+            x0=settings["v_line"]["x"],
+            y0=0,
+            x1=settings["v_line"]["x"],
+            y1=1,
+            line=dict(color="Red", width=3, dash="dot"),
+            xref="x",
+            yref="paper",
+        )
     return fig
 
 
 def boxplot(df, settings: dict):
     settings = get_defaults(settings)
     fig = px.box(df, x="parameter", y="value", title=settings["title"])
+    if "h_line" in settings:
+        fig.add_shape(
+            type="line",
+            x0=0,
+            y0=settings["h_line"]["y"],
+            x1=1,
+            y1=settings["h_line"]["y"],
+            line=dict(color="Red", width=3, dash="dot"),
+            xref="paper",
+            yref="y",
+        )
 
     return fig
 
