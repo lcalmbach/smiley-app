@@ -3,10 +3,10 @@ import streamlit as st
 from smiley import Smiley
 
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __author__ = "Lukas Calmbach"
 __author_email__ = "lcalmbach@gmail.com"
-VERSION_DATE = "2023-11-18"
+VERSION_DATE = "2023-16-01"
 APP_NAME = "smiley-app"
 GIT_REPO = "https://github.com/lcalmbach/smiley-app"
 SOURCE_URL = "https://data.bs.ch/explore/dataset/100268"
