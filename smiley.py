@@ -8,7 +8,7 @@ from enum import Enum
 from scipy import stats
 
 from plots import histogram, boxplot, scatter
-from texts import INFO, STAT_TEXT
+from texts import INFO, STAT_TEXT, STAT_COLUMNS_DESCRIPTION
 from utils import optimize_dataframe_types
 
 PARQUET_FILE = "./data/100268.parquet"
@@ -248,19 +248,24 @@ class Smiley:
             st.markdown(INFO, unsafe_allow_html=True)
 
     def show_statistics(self):
-        def get_text(merged_df):
-            betrieb_df = merged_df[merged_df["phase"] == "Betrieb"]
+        def get_text(df):
+            betrieb_df = df[df["phase"] == "Betrieb"]
             num_tot = merged_df["anz"].sum()
             num_stations = len(betrieb_df["id_standort"].unique())
-            num_reduction_exceedance = len(
-                betrieb_df[
-                    betrieb_df["uebertretung_ausfahrt_median"]
-                    < betrieb_df["uebertretung_einfahrt_median"]
-                ]
-            )
-
+            num_reduction_median_operation = len(betrieb_df[betrieb_df['v_einfahrt_median'] > betrieb_df['v_ausfahrt_median']])
+            delta_p85_operation = (betrieb_df['v_einfahrt_percentile_85'] - betrieb_df['v_ausfahrt_percentile_85']).mean()
+            num_exceedance_decrease_operation = len(betrieb_df[betrieb_df['ist_uebertretung_einfahrt_sum'] > betrieb_df['ist_uebertretung_ausfahrt_sum']])
+            
             text = STAT_TEXT.format(
-                num_tot, num_reduction_exceedance, num_stations, -99, -999
+                num_tot,
+                num_reduction_median_operation,
+                num_stations,
+                f"{num_reduction_median_operation / num_stations * 100: .1f}",
+                f"{delta_p85_operation: .1f}",
+                num_reduction_median_operation,
+                f"{num_reduction_median_operation / num_stations * 100: .1f}",
+                num_exceedance_decrease_operation,
+                f"{num_exceedance_decrease_operation / num_stations * 100: .1f}",
             )
             return text
 
@@ -371,12 +376,14 @@ class Smiley:
         settings = get_settings(fields)
 
         st.markdown(f"### {len(merged_df['id_standort'].unique())} Standorte")
-        tabs = st.tabs(['Tabelle', 'Beschreibung'])
+        tabs = st.tabs(['Tabelle', 'Beschreibung Tabelle', 'Beschreibung Spalten'])
         with tabs[0]:
             st.dataframe(merged_df[el_to_remove + settings["fields"]], height=600, hide_index=True)
         with tabs[1]:
             text = get_text(merged_df)
             st.markdown(text)
+        with tabs[2]:
+            st.markdown(STAT_COLUMNS_DESCRIPTION)
 
     def show_gui(self):
         st.sidebar.title("smiley-app-bs 😃 😐 🤬")
