@@ -192,7 +192,7 @@ class Smiley:
             settings = {}
             with st.sidebar.expander("⚙️ Settings", expanded=True):
                 if "plots" in keys:
-                    available_plots = plot_options
+                    available_plots = plot_options.copy()
                     if len(self.filtered_stations) > 2 and "XY" in available_plots:
                         available_plots.remove("XY")
                     for plot in available_plots:
