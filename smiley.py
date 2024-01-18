@@ -8,7 +8,7 @@ from enum import Enum
 from scipy import stats
 
 from plots import histogram, boxplot, scatter
-from texts import INFO, STAT_TEXT, STAT_COLUMNS_DESCRIPTION
+from texts import INFO, STAT_TEXT, STAT_COLUMNS_DESCRIPTION, STAT_TABLE_INFO
 from utils import optimize_dataframe_types
 
 PARQUET_FILE = "./data/100268.parquet"
@@ -39,6 +39,13 @@ weekday2_options = {
 }
 month_options = range(1, 13)
 plot_options = ["Histogramm", "Boxplot", "XY"]
+
+
+class Phase(Enum):
+    VORMESSUNG = "Vormessung"
+    BETRIEB = "Betrieb"
+    NACHMESSUNG = "Nachmessung"
+    NACHENDE = "Nach Ende"
 
 
 class Smiley:
@@ -248,26 +255,98 @@ class Smiley:
             st.markdown(INFO, unsafe_allow_html=True)
 
     def show_statistics(self):
-        def get_text(df):
-            betrieb_df = df[df["phase"] == "Betrieb"]
-            num_tot = merged_df["anz"].sum()
-            num_stations = len(betrieb_df["id_standort"].unique())
-            num_reduction_median_operation = len(betrieb_df[betrieb_df['v_einfahrt_median'] > betrieb_df['v_ausfahrt_median']])
-            delta_p85_operation = (betrieb_df['v_einfahrt_percentile_85'] - betrieb_df['v_ausfahrt_percentile_85']).mean()
-            num_exceedance_decrease_operation = len(betrieb_df[betrieb_df['ist_uebertretung_einfahrt_sum'] > betrieb_df['ist_uebertretung_ausfahrt_sum']])
-            
+        def get_kennzahlen(df: pd.DataFrame, phase):
+            result = {}
+            filtered_df = df[df["phase"] == phase]
+            result["num_measurement"] = filtered_df["anz"].sum()
+            result["num_stations"] = len(filtered_df["id_standort"].unique())
+            result["mean_exeedance_median"] = filtered_df[
+                "uebertretung_einfahrt_median"
+            ].mean()
+            result["mean_exeedance_p85"] = filtered_df[
+                "uebertretung_einfahrt_percentile_85"
+            ].mean()
+            result["num_reduction_median"] = len(
+                filtered_df[
+                    filtered_df["v_einfahrt_median"] > filtered_df["v_ausfahrt_median"]
+                ]
+            )
+            result["pct_reduction_median"] = (
+                result["num_reduction_median"] / result["num_stations"] * 100
+            )
+            result["num_reduction_p85"] = len(
+                filtered_df[
+                    filtered_df["v_einfahrt_median"] > filtered_df["v_ausfahrt_median"]
+                ]
+            )
+            result["pct_reduction_p85"] = (
+                result["num_reduction_p85"] / result["num_stations"] * 100
+            )
+            result["delta_median"] = (
+                filtered_df["v_einfahrt_median"] - filtered_df["v_ausfahrt_median"]
+            ).mean()
+            result["delta_p85"] = (
+                filtered_df["v_einfahrt_percentile_85"]
+                - filtered_df["v_ausfahrt_percentile_85"]
+            ).mean()
+            result["num_exceedance_decrease"] = len(
+                filtered_df[
+                    filtered_df["ist_uebertretung_einfahrt_sum"]
+                    > filtered_df["ist_uebertretung_ausfahrt_sum"]
+                ]
+            )
+            result["pct_exceedance_decrease"] = (
+                result["num_exceedance_decrease"] / result["num_stations"] * 100
+            )
+            return result
+
+        def get_phase_text(summary_dict: dict, phase: str):
             text = STAT_TEXT.format(
-                num_tot,
-                num_reduction_median_operation,
-                num_stations,
-                f"{num_reduction_median_operation / num_stations * 100: .1f}",
-                f"{delta_p85_operation: .1f}",
-                num_reduction_median_operation,
-                f"{num_reduction_median_operation / num_stations * 100: .1f}",
-                num_exceedance_decrease_operation,
-                f"{num_exceedance_decrease_operation / num_stations * 100: .1f}",
+                phase,
+                summary_dict["num_measurement"],
+                summary_dict["num_reduction_median"],
+                summary_dict["num_stations"],
+                f"{summary_dict['pct_reduction_median']: .1f}",
+                f"{summary_dict['delta_p85'] : .1f}",
+                summary_dict["num_reduction_median"],
+                f"{summary_dict['pct_reduction_median']: .1f}",
+                summary_dict["num_exceedance_decrease"],
+                f"{summary_dict['pct_exceedance_decrease']: .1f}",
             )
             return text
+
+        def get_summmary_table(data: dict):
+            df = pd.DataFrame.from_dict(data, orient='index').transpose()
+            df.index.name = 'parameter'
+            df.reset_index(inplace=True)
+            return df
+
+        def get_text(df):
+            summary_dict = {}
+            summary_dict[Phase.VORMESSUNG.value] = get_kennzahlen(
+                df, Phase.VORMESSUNG.value
+            )
+            text = (
+                get_phase_text(
+                    summary_dict[Phase.VORMESSUNG.value], Phase.VORMESSUNG.value
+                )
+                + "\n"
+            )
+            summary_dict[Phase.BETRIEB.value] = get_kennzahlen(df, Phase.BETRIEB.value)
+            text += (
+                get_phase_text(summary_dict[Phase.BETRIEB.value], Phase.BETRIEB.value)
+                + "\n"
+            )
+            summary_dict[Phase.NACHMESSUNG.value] = get_kennzahlen(
+                df, Phase.NACHMESSUNG.value
+            )
+            text += (
+                get_phase_text(
+                    summary_dict[Phase.NACHMESSUNG.value], Phase.NACHMESSUNG.value
+                )
+                + "\n"
+            )
+            return text, summary_dict
 
         def get_settings(fields: list):
             settings = {}
@@ -359,6 +438,8 @@ class Smiley:
             "v_ausfahrt_percentile_85",
             "uebertretung_einfahrt_median",
             "uebertretung_ausfahrt_median",
+            "uebertretung_einfahrt_percentile_85",
+            "uebertretung_ausfahrt_percentile_85",
             "ist_uebertretung_einfahrt_sum",
             "ist_uebertretung_ausfahrt_sum",
             "ist_uebertretung_einfahrt_pct",
@@ -376,14 +457,32 @@ class Smiley:
         settings = get_settings(fields)
 
         st.markdown(f"### {len(merged_df['id_standort'].unique())} Standorte")
-        tabs = st.tabs(['Tabelle', 'Beschreibung Tabelle', 'Beschreibung Spalten'])
+        tabs = st.tabs(
+            [
+                "Beschreibung Erwartungen",
+                "Auswertung",
+                "Beschreibung Resultate",
+                "Kennzahlen",
+                "Beschreibung Spalten",
+            ]
+        )
+        all_results_dict = {}
         with tabs[0]:
-            st.dataframe(merged_df[el_to_remove + settings["fields"]], height=600, hide_index=True)
+            st.markdown(STAT_TABLE_INFO)
         with tabs[1]:
-            text = get_text(merged_df)
-            st.markdown(text)
+            st.dataframe(
+                merged_df[el_to_remove + settings["fields"]],
+                height=600,
+                hide_index=True,
+            )
         with tabs[2]:
+            text, all_results_dict = get_text(merged_df)
+            st.markdown(text)
+        with tabs[3]:
             st.markdown(STAT_COLUMNS_DESCRIPTION)
+        with tabs[4]:
+            st.dataframe(get_summmary_table(all_results_dict), hide_index=True)
+        
 
     def show_gui(self):
         st.sidebar.title("smiley-app-bs 😃 😐 🤬")

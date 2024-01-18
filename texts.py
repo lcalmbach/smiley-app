@@ -10,16 +10,24 @@ Die Rohdaten, die von diesen Geräten gesammelt wurden, sind öffentlich zugäng
 Diese Art der Datenbereinigung ist ein wichtiger Schritt, um sicherzustellen, dass die Analysen und daraus abgeleiteten Massnahmen zur Verkehrssicherheit auf zuverlässigen und repräsentativen Daten basieren.
 """
 
-STAT_TEXT = """Beim Vergleich von Ein/Ausfahrts Geschwindigkeiten wird erwartet, dass die Geschwindigkeit nach Anzeige des Smileys abnimmt, und zwar besonders bei Fahrzeugen, bei denen die Ampel eine Übertretung anzeigt. Bei den Vormessungen sollte hingegen keine signifikater Unterschied feststellbar sein, das heisst, die Geschwindigkeit nimmt bei je 50% der Fahrzeuge zu oder ab. Je mehr sich im Betrieb das Verhältnis von Geschwindikeitsabnahmen zu Zunahmen von 50% entfernt, deste statistisch wahrscheinlicher ist es, dass die Smiley-Anzeige für die Abnahme verantwortlich ist. Es ist auch zu hoffen, dass die Smiley Anzeige bei zu schnell fahrenden Fahrzugen effektiver ist, als bei korrekt fahrenden, bei welchen eine Geschwindigkeitsreduktion nicht erforderlich ist. Diese Annahmen werden nun mit den Daten in folgendem Abschnitt überprüft. Bei der Vormessung ist zu erwarten dass die Abnahme Von GEschwindigkeit zwischen Vor und Nach-Smiley Messung bei zirka 50% liegt, also rein zufällig sind, da noch keine Anzeige erfolgt. Bei der Nachmessung ist zu erwarten, dass die Geschwindigkeit gegenüber dem Betrieb wieder zunimmt, da di eAnzeige ausgeschaltet ist, jedoch ist zu hoffen, dass sich die Fahrenden an die Anzeige erinnern und daher trotz ausgeschalteter Anzeige langsamer fahren. Diese Annahmen werden nun mit den Daten in folgendem Abschnitt überprüft.
+STAT_TABLE_INFO = """
+Beim Vergleich von Ein/Ausfahrts Geschwindigkeiten Folgendes erwartet: 
 
-**Vormessung:**
+- Bei der Vormessungsphase sollte sich Einfahrts und Ausfahrtsgeschwindikeit an der STation nicht ändern, da es ja noch keine Anzeige gibt. Generell sollten die GEschwindikeiten höher sein als im Betrieb, wo ein durch die Anzeige reduzierende wirkung erwartet wird und als in der NAchmessung, wo eine Nachworking der Betreibsphase erhofft wird. 
+- In der Phase Betrieb wird erwartet, dass die Fahrzeuge ihre Geschwindigkeit bei der Durchfahrt an der Messstelle reduzieren, insbesondere, wenn ihnen eine Geschwindigkeitesübertretung aangezeigt wird. die Ausfahrtsgeschwindigkeiten sollte tiefer als bei der Vormessung sein.
+- Bei der Phase Nachmessung wird ein Memory Effekt nach dem Betrieb erhofft. die Geschwindig vor und nach der Duchfahrt sind wieder sehr ähnlich wie bei der Vormessung, aber im Idealfall tiefer als bei der Vormessung.
 
-**Betrieb:**
+Kennzahlen:
 
-An den selektierten Stationen wurden insgesamt {0} Messungen durchgeführt. Bei {1} von {2} Standorten ({3}%) nahm der Median der Geschwindigkeit nach Anzeige des Smileys im Betrieb ab. Das 85% Perzentil, also die Geschwindigkeit, die bei 85 Prozent der Fahrzeuge unterschritten wurde, fiel durchschnittlich um {4} km/h nach der Smiley Anzeige. Bei {5} Standorten ({6}%) nahm die Geschwindigkeit nach Anzeige des Smileys ab. Bei {7} Standorten ({8}%) nahm im Betrieb die Anzahl der Geschwindigkeitübertretungen ab.
+Als Kennzahlen wird einerseits die Differenz der Median-Geschwindigkeit zwischen Einfahrt und Ausfahrt. Sie beschreibt das allgemeine Verhalten. die Differenz der 85-PErzentil-Geschwindigkeiten zeigt die Veränderung der Geschwindigkeit der schnellsten 15% der Fahrzeuge. Die Differenz der Anzahl Überschreitungen ist der wichtigste Parameter im Betreib: die Smiley-Anzeige soll die Anzahl Überschreitungen reduzieren.
 
-**Nachmessung**:
+Ein statistischer Effekt ist dann wahrscheinlich, wenn bei der Vormessung der Anteil der Stationen bei der Ausfahrt < Einfahrtsgeschwindigkeit bei 50%-, im Betrieb aber wesentlich über 50% liegt. Ändlich wie beim Münzwurf, wo bei einer normalen Münze das Verhältnis Kopf/Zahl bei 50% leigt, bei einer getürkten Münze das Verhältnis abweicht.
+"""
 
+STAT_TEXT = """
+**{0}:**
+
+An den selektierten Stationen wurden in der Phase {0} insgesamt {1} Messungen durchgeführt. Bei {2} von {3} Standorten ({4}%) nahm der Median der Geschwindigkeit nach Anzeige des Smileys im Betrieb ab. Das 85% Perzentil, also die Geschwindigkeit, die bei 85 Prozent der Fahrzeuge unterschritten wurde, fiel durchschnittlich um {5} km/h nach der Smiley Anzeige. Bei {6} Standorten ({7}%) nahm die Geschwindigkeit nach Anzeige des Smileys ab. Bei {8} Standorten ({9}%) nahm im Betrieb die Anzahl der Geschwindigkeitübertretungen ab.
 """
 
 STAT_COLUMNS_DESCRIPTION = """
