@@ -1,26 +1,33 @@
 # download link
 # https://data.bs.ch/api/explore/v2.1/catalog/datasets/100268/exports/csv?lang=de&timezone=Europe%2FZurich&use_labels=false&delimiter=%3B&select=zyklus,phase,id_standort,messung_datum,messung_zeit,v_einfahrt,v_ausfahrt,v_delta,geschwindigkeit&where=messung_jahr=2023
+
 import streamlit as st
 import os
 import numpy as np
 import pandas as pd
 from enum import Enum
 from scipy import stats
+from streamlit_folium import folium_static
 
-from plots import histogram, boxplot, scatter
+from plots import histogram, boxplot, scatter, map
 from texts import INFO, STAT_TEXT, STAT_COLUMNS_DESCRIPTION, STAT_TABLE_INFO
 from utils import optimize_dataframe_types
 
 PARQUET_FILE = "./data/100268.parquet"
 CSV_FILE = "./data/100268.csv"
 CSV_STATIONS_FILE = "./data/100286.csv"
-MAX_STATIONS = 20
+MAX_STATIONS = 10
 
-menu_options = ["Über die App", "Vergleich Geschw. Einfahrt/Ausfahrt", "Statistiken"]
+menu_options = [
+    "Über die App",
+    "Vergleich Geschw. Einfahrt/Ausfahrt",
+    "Statistiken",
+    "Karte",
+]
 phase_options = ["Betrieb", "Vormessung", "Nachmessung"]
 time_options = ["07:00-19:59h", "20:00-06:59h"]
 time2_options = dict(zip(range(24), [f"x{x}:00-{x}:59h" for x in range(24)]))
-weekday_options = ["Montag-Freitag", "Samstag-Sonntag"]
+weekday_options = ["Alle", "Montag-Freitag", "Samstag-Sonntag"]
 velocity_options = {
     -1: "Alle",
     20: "20 km/h",
@@ -77,7 +84,7 @@ class Smiley:
             # station filters
             if "velocity" in keys:
                 sel_velocity = st.selectbox(
-                    label="Gechwindigkeit",
+                    label="Geschwindigkeit",
                     options=velocity_options.keys(),
                     format_func=lambda x: velocity_options[x],
                 )
@@ -105,7 +112,16 @@ class Smiley:
             if "phase" in keys:
                 sel_phase = st.selectbox("Phase", phase_options)
                 filtered_data = filtered_data[filtered_data["phase"] == sel_phase]
-
+            if "weekday-weekend" in keys:
+                sel_weekday = st.selectbox("Wochentag", weekday_options)
+                if sel_weekday == weekday_options[1]:
+                    filtered_data = filtered_data[
+                        filtered_data["messung_datum"].dt.weekday < 5
+                    ]
+                elif sel_weekday == weekday_options[2]:
+                    filtered_data = filtered_data[
+                        filtered_data["messung_datum"].dt.weekday >= 5
+                    ]
         return filtered_data, filtered_stations
 
     def get_data(self):
@@ -156,6 +172,10 @@ class Smiley:
         # print(f"Memory usage: {memory / 1024 ** 2:.2f} MB")
 
         stations = pd.read_csv(CSV_STATIONS_FILE, sep=";")
+        stations[["lat", "lon"]] = stations["geo_point_2d"].str.split(",", expand=True)
+        stations["lat"] = stations["lat"].astype(float)
+        stations["lon"] = stations["lon"].astype(float)
+        stations = stations.drop(columns=["geo_point_2d", "geo_shape"])
         stations.rename(columns={"idstandort": "id_standort"}, inplace=True)
         stations_with_data = data["id_standort"].unique()
         stations = stations[stations["id_standort"].isin(stations_with_data)]
@@ -204,7 +224,7 @@ class Smiley:
                         available_plots.remove("XY")
                     for plot in available_plots:
                         settings[plot] = st.checkbox(plot, value=True)
-            return settings
+            return settings, available_plots
 
         filters = [
             "locations",
@@ -215,8 +235,8 @@ class Smiley:
             "day-night",
         ]
         self.filtered_data, self.filtered_stations = self.filter_data(filters)
-        settings = get_settings(["plots"])
-        plots = [x for x in plot_options if settings[x]]
+        settings, available_plots = get_settings(["plots"])
+        plots = [x for x in available_plots if settings[x]]
 
         for station in list(self.filtered_stations["id_standort"])[: MAX_STATIONS + 1]:
             data = self.filtered_data[self.filtered_data["id_standort"] == station]
@@ -227,8 +247,9 @@ class Smiley:
                 value_name="value",
             )
             st_name = self.stations[self.stations["id_standort"] == station].iloc[0]
+            measurements = f"{len(self.filtered_data):,}".replace(",", "'")
             st.markdown(
-                f"{st_name['strname']} {st_name['hausnr']} (id={st_name['id_standort']}) Höchstgeschwindigkeit: {st_name['geschwind']} km/h, {len(data)} Messungen."
+                f"{st_name['strname']} {st_name['hausnr']} (id={st_name['id_standort']}) Höchstgeschwindigkeit: {st_name['geschwind']} km/h, {measurements} Messungen."
             )
             col_index = 0
             cols = st.columns(2 if len(plots) > 1 else 1)
@@ -303,7 +324,7 @@ class Smiley:
         def get_phase_text(summary_dict: dict, phase: str):
             text = STAT_TEXT.format(
                 phase,
-                summary_dict["num_measurement"],
+                f"{summary_dict['num_measurement']:,}".replace(",", "'"),
                 summary_dict["num_reduction_median"],
                 summary_dict["num_stations"],
                 f"{summary_dict['pct_reduction_median']: .1f}",
@@ -316,8 +337,8 @@ class Smiley:
             return text
 
         def get_summmary_table(data: dict):
-            df = pd.DataFrame.from_dict(data, orient='index').transpose()
-            df.index.name = 'parameter'
+            df = pd.DataFrame.from_dict(data, orient="index").transpose()
+            df.index.name = "parameter"
             df.reset_index(inplace=True)
             return df
 
@@ -482,10 +503,62 @@ class Smiley:
             st.markdown(STAT_COLUMNS_DESCRIPTION)
         with tabs[4]:
             st.dataframe(get_summmary_table(all_results_dict), hide_index=True)
-        
+
+    def show_map(self):
+        def get_settings(settings: dict):
+            parameter_options = [
+                "Geschwindigkeit Einfahrt",
+                "Geschwindigkeit Ausfahrt",
+                "Differenz Ausfahrt-Einfahrt",
+            ]
+            aggregation_options = ["Median", "85% Perzentil"]
+            with st.sidebar.expander("⚙️ Settings", expanded=True):
+                settings["parameter"] = st.selectbox(
+                    "Parameter", options=parameter_options
+                )
+                settings["parameter"] = "v_einfahrt"
+                settings["aggregation"] = st.selectbox(
+                    "Aggregation", options=aggregation_options
+                )
+                settings["aggregation"] = "mean"
+            return settings
+
+        settings = {
+            "lat": "lat",
+            "lon": "lon",
+            "zoom": 13,
+            "color": "color",
+            "marker_size": 10,
+            "tooltip": [
+                {"label": "Standort", "field": "id_standort"},
+                {"label": "Strasse", "field": "strname"},
+                {"label": "Hausnummer", "field": "hausnr"},
+            ],
+        }
+        settings = get_settings(settings)
+        filters = [
+            "locations",
+            "velocity",
+            "stations",
+            "phase",
+            "weekday-weekend",
+            "day-night",
+        ]
+        self.filtered_data, self.filtered_stations = self.filter_data(filters)
+        aggregated_df = (
+            self.filtered_data.groupby(["id_standort", "phase"])
+            .agg(settings["parameter"])
+            .mean()
+        )
+        merged_df = pd.merge(
+            aggregated_df, self.stations, on="id_standort", how="inner"
+        )
+        merged_df["color"] = np.random.choice(["red", "green"], size=len(merged_df))
+        fig = map(merged_df, settings)
+        folium_static(fig, width=1000, height=800)
 
     def show_gui(self):
-        st.sidebar.title("smiley-app-bs 😃 😐 🤬")
+        st.sidebar.title("smiley-app-bs 😃 🤬")
         sel_menu = st.sidebar.selectbox("Analyse", menu_options)
         if menu_options.index(sel_menu) == 0:
             self.info()
@@ -493,3 +566,5 @@ class Smiley:
             self.show_phase_comparison()
         elif menu_options.index(sel_menu) == 2:
             self.show_statistics()
+        elif menu_options.index(sel_menu) == 3:
+            self.show_map()

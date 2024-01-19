@@ -1,6 +1,8 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
+import folium
+
 
 DEFAULT_WIDTH = 600
 DEFAULT_HEIGHT = 600
@@ -32,6 +34,28 @@ MONTH_DICT = {
     "Nov": 11,
     "Dez": 12,
 }
+
+
+def map(df: pd.DataFrame, settings: dict):
+    m = folium.Map(
+        location=[df[settings["lat"]].mean(), df[settings["lon"]].mean()],
+        zoom_start=settings["zoom"],
+    )
+
+    for i, row in df.iterrows():
+        tooltip = ""
+        for tt in settings["tooltip"]:
+            tooltip += f"{tt['label']}: {row[tt['field']]}<br>"
+
+        folium.Circle(
+            location=[row["lat"], row["lon"]],
+            radius=settings["marker_size"],
+            color=row[settings["color"]],
+            fill=True,
+            fill_color=row[settings["color"]],
+            tooltip=tooltip,
+        ).add_to(m)
+    return m
 
 
 def get_defaults(settings: dict) -> dict:
@@ -113,5 +137,4 @@ def scatter(df, settings: dict):
             line=dict(dash="dash", color="red"),
         )
     )
-    # fig.data = [fig.data[0], fig.data[1]]
     return fig

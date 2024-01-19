@@ -7,27 +7,40 @@ Die während dieser Zeit gesammelten Daten dienen als wichtige Grundlage für Ma
 
 Die Rohdaten, die von diesen Geräten gesammelt wurden, sind öffentlich zugänglich auf dem [OGD-Portal](https://data.bs.ch/explore/dataset/100268) des Kantons Basel-Stadt. Bei der Durchsicht dieser Daten fällt auf, dass einige unrealistisch hohe Geschwindigkeiten, wie z.B. 231 km/h in einer 20 km/h-Zone, gemessen wurden. Solche Werte können vor allem bei der graphischen Darstellung stören. Um solche Ausreisser zu bereinigen, wurden statistische Methoden angewendet: Für jede Messstation wurde der Z-Wert, ein Mass für die Abweichung vom Durchschnitt, berechnet. Alle Messungen, deren Z-Wert grösser als 3 oder kleiner als -3 war, wurden aus den Daten entfernt. Diese Methode gewährleistet, dass nur realistische Werte in der Analyse berücksichtigt werden. Dadurch wurden etwa 0.3% der Daten als Ausreisser identifiziert und entfernt. Es ist wichtig zu verstehen, dass ein Z-Wert von -3 oder 3 weit ausserhalb des normalen Bereichs liegt – das entspricht den extremsten 0,3% aller Werte. Diese statistische Filterung hilft dabei, die Daten realitätsgetreu und aussagekräftig zu halten.
 
-Diese Art der Datenbereinigung ist ein wichtiger Schritt, um sicherzustellen, dass die Analysen und daraus abgeleiteten Massnahmen zur Verkehrssicherheit auf zuverlässigen und repräsentativen Daten basieren.
+**Analyse der Einzelmessungen**
+Der Datensatz von 2023 besteht aus über 6 Mio Einzelmessungen an 35 Standorten. Diese grosse Datenmenge bedeutet eine Herausforderung für eine aussagekräftige Analyse. Die grafischen und numerischen Methoden der applikation smiley-app macht folgende Annahmen und versucht sie mit den Daten zu überprüfen:
+- In der Vormessung und Nachmessung unterscheidet sich die Geschwindigkeit der Fahrzeuge bei der Einfahrt und Ausfahrt nicht wesentlich, da die Anzeige nicht aktiv ist.
+- Im Betrieb wird die Geschwindigkeit der Fahrzeuge bei der Einfahrt und Ausfahrt unterschiedlich sein, da die Anzeige aktiv ist, und zu schnelle Fahrende ihr Tempo nach einer 😡 Anzeige reduzieren. Es wird erwartet, dass dieser Effekt vor allem bei Fahrzeugen auftritt, schnell fahren, weshalb die 85-Perzentil Geschwindigkeit stärker reduziert wird als der Median. 
+- Die Geschwindigkeiten sind in der Vormessung am höchsten und Zu und Abnahme der Geschwindigkeit am Smiley Standort sind etwas zufällig, da die Anzeige ja noch nicht aktiv ist und es für die Fahrenden keinen Anlass gibt, die Geschwindigkeit am Standort zu reduzieren. Im Betrieb wird die Geschwindigkeit von Einfahrt zu Ausfahrt reduziert und zwar am stärksten bei hohen Geschwindigkeiten. Da man das Smiley von weitem sieht, ist bereits ein gewisser reduziernder Effekt bei der Einfahrt zu erwarten. In der Nachmessung wird erwartet, dass ein Teil der Fahrenden, welche die Strecke regelmässig befahren, ihr Tempo aus Gewohnheit der letzten 3 Monate reduzieren und es ist eine Geschwindigkeitesabnahme gegenüber der Vormessung zu erwarten, jedoch nicht so stark wie im Betrieb. Zudem sollte die Einfahrts und Ausfahrtsgeschwindigkeit wieder ähnlich sein, da die Anzeige nicht mehr aktiv ist.
+
+**Statistiken**
+Die Kennzahlen, die uns bei der Frage der obigen Antworten helfen sind:
+- Median der Differenz von Ausfahrts- und Einfahrts-Geschwindigkeit:
+- 85-Perzentil der Differenz von Ausfahrts- und Einfahrts-Geschwindigkeit: Geschwindigkeit der schnellsten 15% der Fahrzeuge
+- Anzahl Übertretungen
+- Median der Geschwindigkeitsübertretung
+- 85-Perzentil der Geschwindigkeitsübertretung
+
 """
 
 STAT_TABLE_INFO = """
-Beim Vergleich von Ein/Ausfahrts Geschwindigkeiten Folgendes erwartet: 
+Beim Vergleich von Ein- und Ausfahrtsgeschwindigkeiten wird folgendes Verhalten erwartet:
 
-- Bei der Vormessungsphase sollte sich Einfahrts und Ausfahrtsgeschwindikeit an der STation nicht ändern, da es ja noch keine Anzeige gibt. Generell sollten die GEschwindikeiten höher sein als im Betrieb, wo ein durch die Anzeige reduzierende wirkung erwartet wird und als in der NAchmessung, wo eine Nachworking der Betreibsphase erhofft wird. 
-- In der Phase Betrieb wird erwartet, dass die Fahrzeuge ihre Geschwindigkeit bei der Durchfahrt an der Messstelle reduzieren, insbesondere, wenn ihnen eine Geschwindigkeitesübertretung aangezeigt wird. die Ausfahrtsgeschwindigkeiten sollte tiefer als bei der Vormessung sein.
-- Bei der Phase Nachmessung wird ein Memory Effekt nach dem Betrieb erhofft. die Geschwindig vor und nach der Duchfahrt sind wieder sehr ähnlich wie bei der Vormessung, aber im Idealfall tiefer als bei der Vormessung.
+- In der Vormessungsphase sollte sich die Einfahrts- und Ausfahrtsgeschwindigkeit an der Station nicht ändern, da noch keine Anzeige vorhanden ist, die die Fahrer zum Abbremsen motiviert. Generell sollten die Geschwindigkeiten höher sein als in der Betriebsphase, in der eine geschwindigkeitsreduzierende Wirkung durch die Anzeige erwartet wird, und als in der Nachmessungsphase, in der ein Nachwirken der Betriebsphase erhofft wird.
+- In der Betriebsphase wird erwartet, dass die Fahrzeuge ihre Geschwindigkeit bei der Durchfahrt an der Messstelle reduzieren, insbesondere wenn ihnen eine Geschwindigkeitsübertretung angezeigt wird. Die Ausfahrtsgeschwindigkeiten sollten niedriger sein als bei der Vormessung.
+- In der Nachmessungsphase wird ein "Memory-Effekt" nach dem Betrieb erhofft. Die Geschwindigkeiten vor und nach der Durchfahrt sollten wieder sehr ähnlich wie bei der Vormessung sein, aber idealerweise niedriger als bei der Vormessung.
 
 Kennzahlen:
 
-Als Kennzahlen wird einerseits die Differenz der Median-Geschwindigkeit zwischen Einfahrt und Ausfahrt. Sie beschreibt das allgemeine Verhalten. die Differenz der 85-PErzentil-Geschwindigkeiten zeigt die Veränderung der Geschwindigkeit der schnellsten 15% der Fahrzeuge. Die Differenz der Anzahl Überschreitungen ist der wichtigste Parameter im Betreib: die Smiley-Anzeige soll die Anzahl Überschreitungen reduzieren.
+Als Kennzahlen dienen einerseits die Differenz der Median-Geschwindigkeit zwischen Einfahrt und Ausfahrt, die das allgemeine Verhalten beschreibt. Die Differenz der Geschwindigkeiten beim 85-Prozentil zeigt die Veränderung der Geschwindigkeit der schnellsten 15 % der Fahrzeuge. Die Differenz der Anzahl der Überschreitungen ist der wichtigste Parameter im Betrieb: Die Smiley-Anzeige soll die Anzahl der Überschreitungen reduzieren.
 
-Ein statistischer Effekt ist dann wahrscheinlich, wenn bei der Vormessung der Anteil der Stationen bei der Ausfahrt < Einfahrtsgeschwindigkeit bei 50%-, im Betrieb aber wesentlich über 50% liegt. Ändlich wie beim Münzwurf, wo bei einer normalen Münze das Verhältnis Kopf/Zahl bei 50% leigt, bei einer getürkten Münze das Verhältnis abweicht.
+Ein statistischer Effekt ist wahrscheinlich, wenn bei der Vormessung der Anteil der Stationen, bei denen die Ausfahrtsgeschwindigkeit < Einfahrtsgeschwindigkeit liegt, bei 50 % liegt, im Betrieb aber wesentlich über 50 % liegt. Ähnlich wie beim Münzwurf, wo bei einer normalen Münze das Verhältnis Kopf/Zahl bei 50 % liegt, weicht das Verhältnis bei einer manipulierten Münze ab.
 """
 
 STAT_TEXT = """
 **{0}:**
 
-An den selektierten Stationen wurden in der Phase {0} insgesamt {1} Messungen durchgeführt. Bei {2} von {3} Standorten ({4}%) nahm der Median der Geschwindigkeit nach Anzeige des Smileys im Betrieb ab. Das 85% Perzentil, also die Geschwindigkeit, die bei 85 Prozent der Fahrzeuge unterschritten wurde, fiel durchschnittlich um {5} km/h nach der Smiley Anzeige. Bei {6} Standorten ({7}%) nahm die Geschwindigkeit nach Anzeige des Smileys ab. Bei {8} Standorten ({9}%) nahm im Betrieb die Anzahl der Geschwindigkeitübertretungen ab.
+An den selektierten Stationen wurden in der Phase {0} insgesamt {1} Messungen durchgeführt. Bei {2} von {3} Standorten ({4}%) nahm der Median der Geschwindigkeit nach Anzeige des Smileys in der Phase {0} ab. Das 85% Perzentil, also die Geschwindigkeit, die bei 85 Prozent der Fahrzeuge unterschritten wurde, fiel durchschnittlich um {5} km/h nach der Smiley Anzeige. Bei {6} Standorten ({7}%) nahm die Geschwindigkeit nach Anzeige des Smileys ab. Bei {8} Standorten ({9}%) nahm im Betrieb die Anzahl der Geschwindigkeitübertretungen ab.
 """
 
 STAT_COLUMNS_DESCRIPTION = """
