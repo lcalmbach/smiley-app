@@ -1,3 +1,5 @@
 streamlit==1.30.0
 scipy
 plotly
+folium
+folium_static
