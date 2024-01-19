@@ -17,9 +17,11 @@ Der Datensatz von 2023 besteht aus über 6 Mio Einzelmessungen an 35 Standorten.
 Die Kennzahlen, die uns bei der Frage der obigen Antworten helfen sind:
 - Median der Differenz von Ausfahrts- und Einfahrts-Geschwindigkeit:
 - 85-Perzentil der Differenz von Ausfahrts- und Einfahrts-Geschwindigkeit: Geschwindigkeit der schnellsten 15% der Fahrzeuge
-- Anzahl Übertretungen
-- Median der Geschwindigkeitsübertretung
-- 85-Perzentil der Geschwindigkeitsübertretung
+- Anzahl Geschwindigkeitsübertretungen
+- Median der Geschwindigkeitsübertretungen
+- 85-Perzentil der Geschwindigkeitsübertretungen
+
+**Analysemöglicheiten**
 
 """
 

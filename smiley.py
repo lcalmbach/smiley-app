@@ -84,7 +84,7 @@ class Smiley:
             # station filters
             if "velocity" in keys:
                 sel_velocity = st.selectbox(
-                    label="Geschwindigkeit",
+                    label="Höchstgeschwindigkeit",
                     options=velocity_options.keys(),
                     format_func=lambda x: velocity_options[x],
                 )
