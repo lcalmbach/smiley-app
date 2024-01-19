@@ -1,5 +1,5 @@
 streamlit==1.30.0
-scipy
-plotly
-folium
-folium_static
+scipy==1.11.4
+plotly==5.18.0
+folium==0.15.1
+folium_static==0.18.0
