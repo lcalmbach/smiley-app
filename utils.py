@@ -1,4 +1,5 @@
 import pandas as pd
+from enum import Enum
 
 
 def optimize_dataframe_types(df):
@@ -19,3 +20,16 @@ def optimize_dataframe_types(df):
             df[col] = df[col].astype("category")
 
     return df
+
+
+def enum2dict(en: Enum):
+    """
+    Converts an Enum to a dictionary.
+
+    Args:
+        en (Enum): The Enum to convert.
+
+    Returns:
+        dict: A dictionary representation of the Enum, where the keys are the member names and the values are the member values.
+    """
+    return {member.name: member.value for member in en}

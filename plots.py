@@ -36,23 +36,22 @@ MONTH_DICT = {
 }
 
 
-def map(df: pd.DataFrame, settings: dict):
+def get_map(df: pd.DataFrame, settings: dict):
     m = folium.Map(
         location=[df[settings["lat"]].mean(), df[settings["lon"]].mean()],
         zoom_start=settings["zoom"],
     )
-
     for i, row in df.iterrows():
         tooltip = ""
         for tt in settings["tooltip"]:
             tooltip += f"{tt['label']}: {row[tt['field']]}<br>"
-
+        print(row[settings["marker_color_col"]])
         folium.Circle(
             location=[row["lat"], row["lon"]],
-            radius=settings["marker_size"],
-            color=row[settings["color"]],
+            radius=row[settings["marker_size_col"]],
+            color=row[settings["marker_color_col"]],
             fill=True,
-            fill_color=row[settings["color"]],
+            fill_color=row[settings["marker_color_col"]],
             tooltip=tooltip,
         ).add_to(m)
     return m
@@ -72,14 +71,16 @@ def histogram(df: pd.DataFrame, settings: dict):
     settings = get_defaults(settings)
     fig = px.histogram(
         df,
-        x="value",
-        color="parameter",
+        x=settings["x"],
+        color=settings["color"],
         barmode="overlay",
         nbins=50,
         opacity=0.5,
-        labels={"value": "value"},
+        labels={settings["x"]: settings["color"]},
         title=settings["title"],
     )
+    fig.update_layout(xaxis_title=settings["x_title"], yaxis_title=settings["y_title"])
+
     if "v_line" in settings:
         fig.add_shape(
             type="line",
@@ -96,7 +97,7 @@ def histogram(df: pd.DataFrame, settings: dict):
 
 def boxplot(df, settings: dict):
     settings = get_defaults(settings)
-    fig = px.box(df, x="parameter", y="value", title=settings["title"])
+    fig = px.box(df, x=settings["x"], y=settings["y"], title=settings["title"])
     if "h_line" in settings:
         fig.add_shape(
             type="line",
