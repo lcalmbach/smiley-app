@@ -10,7 +10,16 @@ from scipy import stats
 from streamlit_folium import folium_static
 
 from plots import histogram, boxplot, scatter, get_map
-from texts import INFO, STAT_TEXT, STAT_COLUMNS_DESCRIPTION, STAT_TABLE_INFO, H0_RESULT
+from texts import (
+    INFO,
+    STAT_TEXT,
+    STAT_COLUMNS_DESCRIPTION,
+    STAT_TABLE_INFO,
+    H0_RESULT_ALL,
+    H0_RESULT_EXC,
+    H0_RESULT_EXC_EXPECTED1,
+    H0_RESULT_EXC_EXPECTED2,
+)
 from utils import optimize_dataframe_types, enum2dict
 
 MARKER_COLOR = "red"
@@ -246,7 +255,8 @@ class Smiley:
             value_name="Geschwindigkeit",
         )
         col_index = 0
-        cols = st.columns(2 if len(plots) > 1 else 1)
+        col_num = 2 if len(plots) > 1 else 1
+        cols = st.columns(col_num)
         for plot in plots:
             with cols[col_index]:
                 chart = self.get_chart(data, melted_df, station["geschwind"], plot)
@@ -315,8 +325,7 @@ class Smiley:
         with cols[1]:
             st.markdown(INFO, unsafe_allow_html=True)
 
-    def get_stats_table(self, aggregation_fields):
-        df = self.filtered_data.copy()
+    def get_stats_table(self, df, aggregation_fields):
         df.drop(columns=["zyklus"], inplace=True)
         df["diff_einfahrt_ausfahrt"] = df["v_einfahrt"] - df["v_ausfahrt"]
         df["uebertretung_einfahrt"] = df["v_einfahrt"] - df["geschwindigkeit"]
@@ -372,51 +381,60 @@ class Smiley:
         aggregated_df.dropna(subset=["v_einfahrt_median"], inplace=True)
         return aggregated_df
 
+    def get_kennzahlen_stations(self, df: pd.DataFrame):
+        result = {}
+        result["num_measurement"] = df["anz"].sum()
+        result["num_stations"] = len(df["id_standort"].unique())
+        result["mean_exeedance_median"] = df[
+            "uebertretung_einfahrt_median"
+        ].mean()
+        result["mean_exeedance_p85"] = df[
+            "uebertretung_einfahrt_percentile_85"
+        ].mean()
+        result["num_reduction_median"] = len(
+            df[
+                df["v_einfahrt_median"] > df["v_ausfahrt_median"]
+            ]
+        )
+        result["pct_reduction_median"] = (
+            result["num_reduction_median"] / result["num_stations"] * 100
+        )
+        result["num_reduction_p85"] = len(
+            df[
+                df["v_einfahrt_median"] > df["v_ausfahrt_median"]
+            ]
+        )
+        result["pct_reduction_p85"] = (
+            result["num_reduction_p85"] / result["num_stations"] * 100
+        )
+        result["delta_median"] = (
+            df["v_einfahrt_median"] - df["v_ausfahrt_median"]
+        ).mean()
+        result["delta_p85"] = (
+            df["v_einfahrt_percentile_85"]
+            - df["v_ausfahrt_percentile_85"]
+        ).mean()
+        result["num_exceedance_decrease"] = len(
+            df[
+                df["ist_uebertretung_einfahrt_sum"]
+                > df["ist_uebertretung_ausfahrt_sum"]
+            ]
+        )
+        result["pct_exceedance_decrease"] = (
+            result["num_exceedance_decrease"] / result["num_stations"] * 100
+        )
+        return result
+    
+    def get_kennzahlen(self, df: pd.DataFrame):
+        result = {}
+        result["num_measurement"] = df["id_standort"].count()
+        result["num_stations"] = len(df["id_standort"].unique())
+        result["mean_exeedance_in"] = (df['v_einfahrt'] - df['geschwindigkeit']).mean()
+        result["mean_exeedance_out"] = (df['v_einfahrt'] - df['geschwindigkeit']).mean()
+        
+        return result
+    
     def show_statistics(self):
-        def get_kennzahlen(df: pd.DataFrame, phase):
-            result = {}
-            filtered_df = df[df["phase"] == phase]
-            result["num_measurement"] = filtered_df["anz"].sum()
-            result["num_stations"] = len(filtered_df["id_standort"].unique())
-            result["mean_exeedance_median"] = filtered_df[
-                "uebertretung_einfahrt_median"
-            ].mean()
-            result["mean_exeedance_p85"] = filtered_df[
-                "uebertretung_einfahrt_percentile_85"
-            ].mean()
-            result["num_reduction_median"] = len(
-                filtered_df[
-                    filtered_df["v_einfahrt_median"] > filtered_df["v_ausfahrt_median"]
-                ]
-            )
-            result["pct_reduction_median"] = (
-                result["num_reduction_median"] / result["num_stations"] * 100
-            )
-            result["num_reduction_p85"] = len(
-                filtered_df[
-                    filtered_df["v_einfahrt_median"] > filtered_df["v_ausfahrt_median"]
-                ]
-            )
-            result["pct_reduction_p85"] = (
-                result["num_reduction_p85"] / result["num_stations"] * 100
-            )
-            result["delta_median"] = (
-                filtered_df["v_einfahrt_median"] - filtered_df["v_ausfahrt_median"]
-            ).mean()
-            result["delta_p85"] = (
-                filtered_df["v_einfahrt_percentile_85"]
-                - filtered_df["v_ausfahrt_percentile_85"]
-            ).mean()
-            result["num_exceedance_decrease"] = len(
-                filtered_df[
-                    filtered_df["ist_uebertretung_einfahrt_sum"]
-                    > filtered_df["ist_uebertretung_ausfahrt_sum"]
-                ]
-            )
-            result["pct_exceedance_decrease"] = (
-                result["num_exceedance_decrease"] / result["num_stations"] * 100
-            )
-            return result
 
         def get_phase_text(summary_dict: dict, phase: str):
             text = STAT_TEXT.format(
@@ -441,23 +459,22 @@ class Smiley:
 
         def get_text(df):
             summary_dict = {}
-            summary_dict[Phase.VORMESSUNG.value] = get_kennzahlen(
-                df, Phase.VORMESSUNG.value
-            )
+            filtered_df = df[df["phase"] == Phase.VORMESSUNG.value]
+            summary_dict[Phase.VORMESSUNG.value] = self.get_kennzahlen_stations(filtered_df)
             text = (
                 get_phase_text(
                     summary_dict[Phase.VORMESSUNG.value], Phase.VORMESSUNG.value
                 )
                 + "\n"
             )
-            summary_dict[Phase.BETRIEB.value] = get_kennzahlen(df, Phase.BETRIEB.value)
+            filtered_df = df[df["phase"] == Phase.BETRIEB.value]
+            summary_dict[Phase.BETRIEB.value] = self.get_kennzahlen_stations(filtered_df)
             text += (
                 get_phase_text(summary_dict[Phase.BETRIEB.value], Phase.BETRIEB.value)
                 + "\n"
             )
-            summary_dict[Phase.NACHMESSUNG.value] = get_kennzahlen(
-                df, Phase.NACHMESSUNG.value
-            )
+            filtered_df = df[df["phase"] == Phase.NACHMESSUNG.value]
+            summary_dict[Phase.NACHMESSUNG.value] = self.get_kennzahlen_stations(filtered_df)
             text += (
                 get_phase_text(
                     summary_dict[Phase.NACHMESSUNG.value], Phase.NACHMESSUNG.value
@@ -481,7 +498,7 @@ class Smiley:
 
         filters = ["locations", "velocity", "stations", "weekday-weekend", "day-night"]
         self.filtered_data, self.filtered_stations = self.filter_data(filters)
-        stats_df = self.get_stats_table(["id_standort", "phase"])
+        stats_df = self.get_stats_table(self.filtered_data.copy(), ["id_standort", "phase"])
         merged_df = pd.merge(stats_df, self.stations, on="id_standort", how="inner")
         fields = [
             "id_standort",
@@ -594,7 +611,7 @@ class Smiley:
         aggregation_fields = (
             ["id_standort"] if len(phases) > 1 else ["id_standort", "phase"]
         )
-        aggregated_df = self.get_stats_table(aggregation_fields)
+        aggregated_df = self.get_stats_table(self.filtered_data.copy(), aggregation_fields)
         merged_df = pd.merge(
             aggregated_df, self.stations, on="id_standort", how="inner"
         )
@@ -602,6 +619,7 @@ class Smiley:
 
         fig = get_map(merged_df, settings)
         st.markdown(f"### {len(self.filtered_stations)} Smiley-Standorte")
+        st.markdown(f"Grösse der Symbole ist proportional zu Parameter ***{settings['parameter']}***.")
         folium_static(fig, width=1000, height=800)
         st.download_button(
             label="Download Daten",
@@ -610,7 +628,7 @@ class Smiley:
             mime="text/csv",
         )
 
-    def show_station(self):
+    def show_station_analysis(self):
         filters = [
             "station",
         ]
@@ -619,60 +637,85 @@ class Smiley:
         title = f"### {row['strname']} {row['hausnr']} (id={row['id_standort']}) Höchstgeschwindigkeit: {row['geschwind']} km/h"
         st.markdown(title)
         tabs = st.tabs(["Plots", "Kennzahlen", "Signifikanztest"])
+        kennzahlen = pd.DataFrame()
         for phase in ["Vormessung", "Betrieb", "Nachmessung"]:
             data = self.filtered_data[self.filtered_data["phase"] == phase]
             with tabs[0]:
                 st.markdown(f"#### {phase}")
                 self.show_plots(data, ["Histogramm", "Boxplot"], row)
             with tabs[1]:
-                st.markdown(f"#### {phase}")
-                st.dataframe(data.describe())
+                kennzahlen = pd.concat([kennzahlen, self.get_stats_table(data, ["id_standort", "phase"])])
+                if phase == Phase.NACHMESSUNG.value:
+                    kennzahlen.drop(columns=["id_standort"], inplace=True)
+                    kennzahlen.columns = [
+                        'Phase',
+                        'Geschw. Einfahrt (km/h, median)',
+                        'Geschw. Einfahrt (km/h, P85)',
+                        'Anzahl',
+                        'Geschw. Ausfahrt (km/h, median)',
+                        'Geschw. Ausfahrt (km/h, P85)',
+                        'Differenz Ausfahrt-Einfahrt (km/h, median)',
+                        'Differenz Ausfahrt-Einfahrt (km/h, P85)',
+                        'Übertretung Einfahrt (km/h, median)',
+                        'Übertretung Einfahrt (km/h, P85)',
+                        'Übertretung Ausfahrt (km/h, median)',
+                        'Übertretung Ausfahrt (km/h, P85)',
+                        'Anzahl Übertretungen Einfahrt',
+                        'Anzahl Übertretungen Ausfahrt',
+                        'Prozent Übertretungen Einfahrt',
+                        'Prozent Übertretungen Ausfahrt',
+                    ]
+                    melted_df = kennzahlen.melt(id_vars=["Phase"], var_name="Kennzahl", value_name="Wert")
+                    final_df = melted_df.pivot(index='Kennzahl', columns='Phase', values='Wert').reset_index()
+                    st.dataframe(final_df, hide_index=True, height=600)
+                    st.markdown("Negative Übertretungsgeschwindigkeiten bedeuten, dass die Geschwindigkeit unter der Höchstgeschwindigkeit liegt.")
             with tabs[2]:
                 st.markdown(f"#### {phase}")
-                st.markdown("**Alle Werte**")
                 mean_einfahrt = data["v_einfahrt"].mean()
-                std_einfahrt = data["v_einfahrt"].std()
                 mean_ausfahrt = data["v_ausfahrt"].mean()
-                std_ausfahrt = data["v_ausfahrt"].std()
                 t_stat, p_value, h0_rejected = self.wilcoxon_test(
                     data, "v_einfahrt", "v_ausfahrt"
                 )
-                df = pd.DataFrame(
-                    {
-                        "Stat. Parameter": ['Anzahl Messungen', "Mittelwert", "Standardabweichung"],
-                        "Einfahrt": [len(data), mean_einfahrt, std_einfahrt],
-                        "Ausfahrt": [len(data), mean_ausfahrt, std_ausfahrt],
-                    }
+                adj = "höher" if mean_einfahrt < mean_ausfahrt else "tiefer"
+                result = "abgelehnt" if h0_rejected else "angenommen"
+                result_long = (
+                    f"ist die Ausfahrtsgeschwindigkeit signifikant {adj}"
+                    if h0_rejected
+                    else f"ist die {adj}e Ausfahrtsgeschwindigkeit nicht signifikant."
                 )
-                st.data_editor(df, hide_index=True)
-                
-                adj = 'höher' if  mean_einfahrt < mean_ausfahrt else 'tiefer'
-                result = 'abgelehnt' if h0_rejected else 'angenommen'
-                result_long = f'ist die Ausfahrtsgeschwindigkeit signifikant {adj}' if h0_rejected else f'ist die {adj}e Ausfahrtsgeschwindigkeit nicht signifikant.'
-                st.markdown(H0_RESULT.format(mean_ausfahrt-mean_einfahrt, adj, result, result_long))
+                st.markdown(
+                    H0_RESULT_ALL.format(
+                        phase, mean_ausfahrt - mean_einfahrt, adj, result, result_long
+                    )
+                )
 
-                st.markdown("**Nur Geschwindigkeitsübertretungen (Einfahrt > Höchstgeschwindigkeit)**")
                 data = data[data["v_einfahrt"] > data["geschwindigkeit"]]
                 mean_einfahrt = data["v_einfahrt"].mean()
-                std_einfahrt = data["v_einfahrt"].std()
                 mean_ausfahrt = data["v_ausfahrt"].mean()
-                std_ausfahrt = data["v_ausfahrt"].std()
                 t_stat, p_value, h0_rejected = self.wilcoxon_test(
                     data, "v_einfahrt", "v_ausfahrt"
                 )
-                df = pd.DataFrame(
-                    {
-                        "Stat. Parameter": ['Anzahl Messungen', "Mittelwert", "Standardabweichung"],
-                        "Einfahrt": [len(data), mean_einfahrt, std_einfahrt],
-                        "Ausfahrt": [len(data), mean_ausfahrt, std_ausfahrt],
-                    }
+                expected = (
+                    H0_RESULT_EXC_EXPECTED1
+                    if phase == Phase.BETRIEB.value
+                    else H0_RESULT_EXC_EXPECTED2
                 )
-                st.data_editor(df, hide_index=True)
-                
-                adj = 'höher' if  mean_einfahrt < mean_ausfahrt else 'tiefer'
-                result = 'abgelehnt' if h0_rejected else 'angenommen'
-                result_long = f'ist die Ausfahrtsgeschwindigkeit signifikant {adj}' if h0_rejected else f'ist die {adj}e Ausfahrtsgeschwindigkeit nicht signifikant.'
-                st.markdown(H0_RESULT.format(mean_ausfahrt-mean_einfahrt, adj, result, result_long))
+                adj = "höher" if mean_einfahrt < mean_ausfahrt else "tiefer"
+                result = "abgelehnt" if h0_rejected else "angenommen"
+                result_long = (
+                    f"ist die Ausfahrtsgeschwindigkeit signifikant {adj}"
+                    if h0_rejected
+                    else f"ist die {adj}e Ausfahrtsgeschwindigkeit nicht signifikant."
+                )
+                st.markdown(
+                    H0_RESULT_EXC.format(
+                        expected,
+                        mean_ausfahrt - mean_einfahrt,
+                        adj,
+                        result,
+                        result_long,
+                    )
+                )
 
     def show_gui(self, sel_menu):
         if sel_menu == 0:
@@ -684,4 +727,4 @@ class Smiley:
         elif sel_menu == 3:
             self.show_phase_comparison()
         elif sel_menu == 4:
-            self.show_station()
+            self.show_station_analysis()

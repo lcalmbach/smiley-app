@@ -24,6 +24,11 @@ Die Kennzahlen, die uns bei der Frage der obigen Antworten helfen sind:
 
 **Analysemöglicheiten**
 
+Diese App verzichtet auf vorgefertigte Analysen und bietet dem User stattdessen verschiedene Tools, um die Daten selbst zu erkunden. 
+- Im Menü *Karten* kannst du die Daten geografisch darstellen und eine ausgewählte Kennzahl mit proportionaler Größe für jeden Standort anzeigen.
+- Die Statistiken ermöglichen es dir, die Kennzahlen für die verschiedenen Standorte numerisch zu vergleichen. Der Reiter *Beschreibung Erwartungen* gibt Hinweise darauf, welche Resultate zu erwarten wären, wenn die erhoffte Annahme – nämlich dass die Geschwindigkeit im Betrieb reduziert wird und in der Nachmessung noch eine gewisse Nachwirkung eintritt – zutrifft. Die Beschreibung der Resultate fasst die numerischen Ergebnisse in Worten zusammen.
+- Das Menü *Vergleich Ein-/Ausfahrt* vergleicht die Ein- und Ausfahrtsgeschwindigkeiten mit verschiedenen Grafiken, welche die Verteilung der beiden Geschwindigkeiten darstellen. Es können höchstens 10 Standorte gleichzeitig angezeigt werden. Im Dropdown-Feld *Standorte* kann die Auswahl der Standorte verändert werden. Ohne Auswahl werden die ersten 10 Standorte angezeigt. Werden nur ein oder zwei Standorte ausgewählt, so kann auch ein X-Y-Plot der beiden Geschwindigkeiten erstellt werden. Dieser erlaubt es, weitere Informationen aus den Daten zu ziehen, z.B. wird deutlich, dass bestimmte Geschwindigkeiten nie gemessen werden, wie z.B. 21 und 22 km/h bei der Einfahrt und 21 km/h bei der Ausfahrt.
+- Das Menü *Analyse Standort* stellt verschiedene Informationen zur Analyse eines einzelnen Standorts, der im Filter *Standort* ausgewählt werden kann, zusammen. Neben dem Vergleich von Ein- und Ausfahrt wird auch ein Vergleich zwischen den Kennzahlen in den verschiedenen Phasen angezeigt. In einem statistischen Signifikanztest wird berechnet, ob eine Ab- oder Zunahme der Geschwindigkeit statistisch signifikant ist und somit einen wahrscheinlichen Verursacher gibt. Im Betrieb ist dies die Smiley-Anzeige, die die Schnellfahrenden zum Abbremsen motiviert. Signifikante Abnahmen und sogar Zunahmen der Ausfahrtsgeschwindigkeit in der Phase Vor- und Nachmessung sind jedoch ebenfalls sehr häufig und fast die Regel. Sie sind schwer zu erklären, da die Anzeige nicht aktiv ist.
 """
 
 STAT_TABLE_INFO = """
@@ -63,5 +68,17 @@ STAT_COLUMNS_DESCRIPTION = """
 | ist_uebertretung_einfahrt_pct  | Prozent Übertretungen vor Smiley-Anzeige |
 | ist_uebertretung_ausfahrt_pct  | Prozent Übertretungen nach Smiley-Anzeige |
 """
-H0_RESULT = """
-Der Median der Ausfahrtsgeschwindigkeit ist um {0: .1f} km/h {1} als der Median der Einfahrtsgeschwindigkeit. Ein [Wilcoxon-Vorzeichen-Rang-Test](https://de.wikipedia.org/wiki/Wilcoxon-Vorzeichen-Rang-Test) mit Alpha = 0.05 wurde durchgeführt, um die statistische Relevanz der Geschwindigkeitsunterschiede zu überprüfen. Die Nullhypothese (Annahme: kein Unterschied) wird {2}, somit {3}."""
+H0_RESULT_ALL = """
+In der Phase {0} ist der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Ein [Wilcoxon-Vorzeichen-Rang-Test](https://de.wikipedia.org/wiki/Wilcoxon-Vorzeichen-Rang-Test) mit Alpha = 0.05 wurde durchgeführt, um die statistische Relevanz der Geschwindigkeitsunterschiede zu überprüfen. Die Nullhypothese (Annahme: kein Unterschied) wird {3}, somit {4}.
+"""
+
+H0_RESULT_EXC = """
+Ein zweiter Signifikanztest wurde durchgeführt mit einer Auswahl der Messungen, bei denen die Einfahrtsgeschwindigkeit die erlaubte Höchstgeschwindigkeit überschreitet. {0} Der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Der Wilcoxon-Vorzeichen-Rang-Test (Alpha = 0.05) ergibt eine , um die statistische Relevanz der Geschwindigkeitsunterschiede zu überprüfen. Die Nullhypothese (Annahme: kein Unterschied) wird {3}, somit {4}.
+"""
+
+H0_RESULT_EXC_EXPECTED1 = """
+Hier wird im Betrieb ein 😡-Emoji angezeigt was die Fahrer zum abbremsen motivieren soll und eine besonders hohe Signifikanz einer Gewschwinkdigkeitsabnahme wird erwartetWarnsmiley.
+"""
+H0_RESULT_EXC_EXPECTED2 = """"
+Bei Vor und Nachmessungsphase kann der Trend zu- oder abnehmend sein und sollte in der Regel nicht signifikant sein, da es keinen Grund gibt, systematisch zu bremsen oder zu beschleunigen.
+"""
