@@ -14,7 +14,7 @@ SOURCE_URL = "https://data.bs.ch/explore/dataset/100268"
 menu_options = [
     "Über die App",
     "Karten",
-    "Statistken",
+    "Statistiken",
     "Vergleich Ein-/Ausfahrt",
     "Analyse Standort",
 ]

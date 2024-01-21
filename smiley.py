@@ -649,16 +649,16 @@ class Smiley:
                     kennzahlen.drop(columns=["id_standort"], inplace=True)
                     kennzahlen.columns = [
                         'Phase',
-                        'Geschw. Einfahrt (km/h, median)',
+                        'Geschw. Einfahrt (km/h, Median)',
                         'Geschw. Einfahrt (km/h, P85)',
-                        'Anzahl',
+                        'Anzahl Messungen',
                         'Geschw. Ausfahrt (km/h, median)',
                         'Geschw. Ausfahrt (km/h, P85)',
-                        'Differenz Ausfahrt-Einfahrt (km/h, median)',
+                        'Differenz Ausfahrt-Einfahrt (km/h, Median)',
                         'Differenz Ausfahrt-Einfahrt (km/h, P85)',
-                        'Übertretung Einfahrt (km/h, median)',
+                        'Übertretung Einfahrt (km/h, Median)',
                         'Übertretung Einfahrt (km/h, P85)',
-                        'Übertretung Ausfahrt (km/h, median)',
+                        'Übertretung Ausfahrt (km/h, Median)',
                         'Übertretung Ausfahrt (km/h, P85)',
                         'Anzahl Übertretungen Einfahrt',
                         'Anzahl Übertretungen Ausfahrt',
@@ -668,6 +668,12 @@ class Smiley:
                     melted_df = kennzahlen.melt(id_vars=["Phase"], var_name="Kennzahl", value_name="Wert")
                     final_df = melted_df.pivot(index='Kennzahl', columns='Phase', values='Wert').reset_index()
                     st.dataframe(final_df, hide_index=True, height=600)
+                    st.download_button(
+                        label="Daten herunterladen",
+                        data=final_df.to_csv(index=False),
+                        file_name=f"standort_{row['id_standort']}.csv",
+                        mime="text/csv",
+                    )
                     st.markdown("Negative Übertretungsgeschwindigkeiten bedeuten, dass die Geschwindigkeit unter der Höchstgeschwindigkeit liegt.")
             with tabs[2]:
                 st.markdown(f"#### {phase}")
