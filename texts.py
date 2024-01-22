@@ -5,7 +5,7 @@ Die 20 Smiley-Geschwindigkeitsanzeigen rotieren zwischen den 75 Standorten und w
 
 **Datenaufbereitung und Ausreisser-Werte**
 
-Die Rohdaten, die von diesen Geräten gesammelt wurden, sind öffentlich zugänglich auf dem [OGD-Portal](https://data.bs.ch/explore/dataset/100268) des Kantons Basel-Stadt. Bei der Durchsicht dieser Daten fällt auf, dass einige unrealistisch hohe Geschwindigkeiten, wie z.B. 231 km/h in einer 20 km/h-Zone, gemessen wurden. Solche extreme Werte werden als Ausreisser bezeichnet. Sie stören vor allem bei der graphischen Darstellung. 
+Die Rohdaten, die von diesen Geräten gesammelt wurden, sind öffentlich zugänglich auf dem [OGD-Portal](https://data.bs.ch/explore/dataset/100268) des Kantons Basel-Stadt. Bei der Durchsicht dieser Daten fällt auf, dass einige unrealistisch hohe Geschwindigkeiten, wie z.B. 231 km/h in einer 20 km/h-Zone, gemessen wurden. Solche extreme Werte werden als Ausreisser bezeichnet. Sie stören vor allem bei der graphischen Darstellung. Mit einem statistischen Verfahren wurden für jeden Standort alle Werte entfernt, welche mehr als 3 Standardabweichungen vom Mittelwert entfernt sind. Diese Geschwindigkeiten haben eine Wahrscheinlichkeit von 0.13% und sind damit sehr unwahrscheinlich.
 
 **Analyse der Einzelmessungen**
 Der Datensatz von 2023 besteht aus über 6 Mio Einzelmessungen an 35 Standorten. Diese grosse Datenmenge bedeutet eine Herausforderung für eine aussagekräftige Analyse. Die grafischen und numerischen Methoden der applikation smiley-app macht folgende Annahmen und versucht sie mit den Daten zu überprüfen:
@@ -77,8 +77,8 @@ Ein zweiter Signifikanztest wurde durchgeführt mit einer Auswahl der Messungen,
 """
 
 H0_RESULT_EXC_EXPECTED1 = """
-Hier wird im Betrieb ein 😡-Emoji angezeigt was die Fahrer zum abbremsen motivieren soll und eine besonders hohe Signifikanz einer Gewschwinkdigkeitsabnahme wird erwartetWarnsmiley.
+Hier wird im Betrieb ein 😡-Emoji angezeigt, was die Fahrer zum abbremsen motivieren soll. Es wird eine signifikante Geschwindigkeitsabnahme erwartet.
 """
 H0_RESULT_EXC_EXPECTED2 = """"
-Bei Vor und Nachmessungsphase kann der Trend zu- oder abnehmend sein und sollte in der Regel nicht signifikant sein, da es keinen Grund gibt, systematisch zu bremsen oder zu beschleunigen.
+Bei Vor und Nachmessungsphase kann der Trend zu- oder abnehmend- und sollte in der Regel nicht signifikant sein, da es keinen Grund gibt, bei der Durchfahrt am Standort systematisch zu bremsen oder zu beschleunigen.
 """

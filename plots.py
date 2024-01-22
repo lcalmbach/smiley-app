@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 import folium
 
 
@@ -34,6 +35,37 @@ MONTH_DICT = {
     "Nov": 11,
     "Dez": 12,
 }
+
+
+def line_chart(df: pd.DataFrame, settings: dict):
+    fig = go.Figure()
+    for color in df[settings["color"]].unique():
+        color_df = df[df[settings['color']] == color]
+        fig.add_trace(
+            go.Scatter(
+                x=color_df[settings["x"]],
+                y=color_df[settings["y"]],
+                mode="lines",
+                name=color,
+            )
+        )
+    if "h_line" in settings:
+        fig.add_shape(
+            type="line",
+            x0=0,
+            y0=settings["h_line"]["y"],
+            x1=1,
+            y1=settings["h_line"]["y"],
+            line=dict(color="Red", width=3, dash="dot"),
+            xref="paper",
+            yref="y",
+        )
+
+    fig.update_layout(
+        xaxis_title=settings["x_title"],
+        yaxis_title=settings["y_title"],
+    )
+    return fig
 
 
 def get_map(df: pd.DataFrame, settings: dict):
