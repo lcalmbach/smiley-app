@@ -40,7 +40,7 @@ MONTH_DICT = {
 def line_chart(df: pd.DataFrame, settings: dict):
     fig = go.Figure()
     for color in df[settings["color"]].unique():
-        color_df = df[df[settings['color']] == color]
+        color_df = df[df[settings["color"]] == color]
         fig.add_trace(
             go.Scatter(
                 x=color_df[settings["x"]],

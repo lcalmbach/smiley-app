@@ -8,6 +8,8 @@ import pandas as pd
 from enum import Enum
 from scipy import stats
 from streamlit_folium import folium_static
+import logging
+import time
 
 from plots import histogram, boxplot, scatter, get_map, line_chart
 from texts import (
@@ -56,7 +58,7 @@ weekday2_options = {
     6: "Sonntag",
 }
 month_options = range(1, 13)
-plot_options = ["Histogramm", "Boxplot", "XY"] #  "Kumulatives Liniendiagramm"
+plot_options = ["Histogramm", "Boxplot", "XY", "Kumulatives Liniendiagramm"]
 stats_parameter_options = {
     "v_einfahrt_median": "Geschw. Einfahrt (median)",
     "v_einfahrt_percentile_85": "Geschw. Einfahrt (85-Perz.)",
@@ -133,6 +135,7 @@ class Smiley:
                     "Standorte",
                     options=self.station_options.keys(),
                     format_func=lambda x: self.station_options[x],
+                    default=filtered_stations["id_standort"].iloc[0],
                     help="wähle ein oder mehrere Standorte, die angezeigt werden sollen. Wenn keine Standorte ausgewählt werden, werden alle Standorte angezeigt.",
                 )
                 if sel_stations:
@@ -147,7 +150,7 @@ class Smiley:
                 ]
             # measurement filters
             if "phase" in keys:
-                sel_phase = st.selectbox("Phase", [member.value for member in Phase])
+                sel_phase = st.selectbox("Phase", [member.value for member in Phase], index=2)
                 if sel_phase != Phase.Alle.value:
                     filtered_data = filtered_data[filtered_data["phase"] == sel_phase]
             if "weekday-weekend" in keys:
@@ -251,8 +254,10 @@ class Smiley:
         elif plot == plot_options[3]:
             lst_e = df["v_einfahrt"].sort_values().tolist()
             lst_a = df["v_ausfahrt"].sort_values().tolist()
-            lst_e_pct = [(lst_e.index(value) + 1) / len(lst_e) * 100 for value in lst_e]
-            lst_a_pct = [(lst_a.index(value) + 1) / len(lst_a) * 100 for value in lst_a]
+            lst_length = len(lst_e)
+            lst_e_pct = [(i + 1) / lst_length * 100 for i in range(lst_length)]
+            lst_length = len(lst_a)
+            lst_a_pct = [(i + 1) / lst_length * 100 for i in range(lst_length)]
             df_pct = pd.DataFrame(
                 {"messung": ["Einfahrt"] * len(lst_e), "pct": lst_e_pct, "v": lst_e}
             )
@@ -260,11 +265,15 @@ class Smiley:
                 [
                     df_pct,
                     pd.DataFrame(
-                        {"messung": ["Ausfahrt"] * len(lst_a), "pct": lst_a_pct, "v": lst_a}
+                        {
+                            "messung": ["Ausfahrt"] * len(lst_a),
+                            "pct": lst_a_pct,
+                            "v": lst_a,
+                        }
                     ),
                 ]
             )
-            df_pct = df_pct.groupby(['messung', 'v'])['pct'].max().reset_index()
+            df_pct = df_pct.groupby(["messung", "v"])["pct"].max().reset_index()
             plot_settings = {
                 "x": "pct",
                 "y": "v",
@@ -314,13 +323,11 @@ class Smiley:
         def get_settings(keys: list):
             settings = {}
             with st.sidebar.expander("⚙️ Settings", expanded=True):
-                if "plots" in keys:
-                    available_plots = plot_options.copy()
-                    if len(self.filtered_stations) > 1:
-                        available_plots = available_plots[:2]
-                    for plot in available_plots:
-                        settings[plot] = st.checkbox(plot, value=True)
-            return settings, available_plots
+                plot1 = st.selectbox("Graphik links", options=plot_options)
+                plot2_options = ['Wähle eine Grafik'] + [x for x in plot_options if x != plot1]
+                plot2 = st.selectbox("Graphik rechts", options=plot2_options, index = 1)
+                settings['plots'] = [plot1, plot2] if plot2_options.index(plot2) > 0 else [plot1]
+            return settings
 
         filters = [
             "locations",
@@ -331,8 +338,7 @@ class Smiley:
             "day-night",
         ]
         self.filtered_data, self.filtered_stations = self.filter_data(filters)
-        settings, available_plots = get_settings(["plots"])
-        plots = [x for x in available_plots if settings[x]]
+        settings = get_settings(["plots"])
 
         for station in list(self.filtered_stations["id_standort"])[: MAX_STATIONS + 1]:
             data = self.filtered_data[self.filtered_data["id_standort"] == station]
@@ -341,12 +347,12 @@ class Smiley:
             st.markdown(
                 f"{station['strname']} {station['hausnr']} (id={station['id_standort']}) Höchstgeschwindigkeit: {station['geschwind']} km/h, {measurements} Messungen."
             )
-            self.show_plots(data, plots, station)
+            self.show_plots(data, settings['plots'], station)
 
+        text = "Die gepunktete Linie in den Grafiken zeigt die erlaubte Höchstgeschwindigkeit am Standort an."
         if len(self.filtered_stations) > MAX_STATIONS:
-            st.markdown(
-                f"Es werden nur die ersten {MAX_STATIONS} Stationen angezeigt. Bitte filtern Sie die Daten, um die Anzahl Stationen zu reduzieren."
-            )
+            text += f" Es werden nur die ersten {MAX_STATIONS} Standorte angezeigt. Bitte filtere die Daten mit der Standorte Auswahlliste in der Navigationsleiste, um die gewünschten Standorte zu zeigen."
+        st.markdown(text)
 
     def info(self):
         st.image("./assets/splash.jpg", width=1000)
@@ -584,7 +590,6 @@ class Smiley:
             st.dataframe(get_summmary_table(all_results_dict), hide_index=True)
         with tabs[4]:
             st.markdown(STAT_COLUMNS_DESCRIPTION)
-        
 
     def show_map(self):
         def format_marker(df: pd.DataFrame, par: str):
