@@ -68,17 +68,21 @@ STAT_COLUMNS_DESCRIPTION = """
 | ist_uebertretung_einfahrt_pct  | Prozent Übertretungen vor Smiley-Anzeige |
 | ist_uebertretung_ausfahrt_pct  | Prozent Übertretungen nach Smiley-Anzeige |
 """
+
+WILCOXON_DESCRIPTION = """
+"""
+
 H0_RESULT_ALL = """
-In der Phase {0} ist der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Ein [Wilcoxon-Vorzeichen-Rang-Test](https://de.wikipedia.org/wiki/Wilcoxon-Vorzeichen-Rang-Test) mit Alpha = 0.05 wurde durchgeführt, um die statistische Relevanz der Geschwindigkeitsunterschiede zu überprüfen. Die Nullhypothese (Annahme: kein Unterschied) wird {3}, somit {4}.
+In der Phase {0} ist der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Ein [Wilcoxon-Vorzeichen-Rang-Test](https://de.wikipedia.org/wiki/Wilcoxon-Vorzeichen-Rang-Test) mit Alpha = 0.05 wurde durchgeführt, um die statistische Relevanz der Geschwindigkeitsunterschiede zu überprüfen. Die Nullhypothese (Annahme: kein Unterschied zwischen Einfahrts- und Ausfahrtsgeschwindigkeit) wird {3}, somit {4}.
 """
 
 H0_RESULT_EXC = """
-Ein zweiter Signifikanztest wurde durchgeführt mit einer Auswahl der Messungen, bei denen die Einfahrtsgeschwindigkeit die erlaubte Höchstgeschwindigkeit überschreitet. {0} Der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Der Wilcoxon-Vorzeichen-Rang-Test (Alpha = 0.05) ergibt eine , um die statistische Relevanz der Geschwindigkeitsunterschiede zu überprüfen. Die Nullhypothese (Annahme: kein Unterschied) wird {3}, somit {4}.
+Ein zweiter Signifikanztest wurde durchgeführt mit einer Auswahl der Messungen, bei denen die Einfahrtsgeschwindigkeit die erlaubte Höchstgeschwindigkeit überschreitet. {0} Der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Die Nullhypothese des Wilcoxon-Vorzeichen-Rang-Test wird {3}, somit {4}.
 """
 
 H0_RESULT_EXC_EXPECTED1 = """
 Hier wird im Betrieb ein 😡-Emoji angezeigt, was die Fahrer zum abbremsen motivieren soll. Es wird eine signifikante Geschwindigkeitsabnahme erwartet.
 """
-H0_RESULT_EXC_EXPECTED2 = """"
+H0_RESULT_EXC_EXPECTED2 = """
 Bei Vor und Nachmessungsphase kann der Trend zu- oder abnehmend- und sollte in der Regel nicht signifikant sein, da es keinen Grund gibt, bei der Durchfahrt am Standort systematisch zu bremsen oder zu beschleunigen.
 """
