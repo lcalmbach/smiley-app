@@ -22,13 +22,13 @@ Die Kennzahlen, die uns bei der Frage der obigen Antworten helfen sind:
 - Median der Geschwindigkeitsübertretungen
 - 85-Perzentil der Geschwindigkeitsübertretungen
 
-**Analysemöglicheiten**
+**Analyse-Möglicheiten**
 
-Diese App verzichtet auf vorgefertigte Analysen und bietet dem User stattdessen verschiedene Tools, um die Daten selbst zu erkunden. 
+Diese App verzichtet auf vorgefertigte Analysen und bietet dem User stattdessen verschiedene Werkzeuge, um die Daten selbst zu erkunden. 
 - Im Menü *Karten* kannst du die Daten geografisch darstellen und eine ausgewählte Kennzahl mit proportionaler Größe für jeden Standort anzeigen.
 - Die Statistiken ermöglichen es dir, die Kennzahlen für die verschiedenen Standorte numerisch zu vergleichen. Der Reiter *Beschreibung Erwartungen* gibt Hinweise darauf, welche Resultate zu erwarten wären, wenn die erhoffte Annahme – nämlich dass die Geschwindigkeit im Betrieb reduziert wird und in der Nachmessung noch eine gewisse Nachwirkung eintritt – zutrifft. Die Beschreibung der Resultate fasst die numerischen Ergebnisse in Worten zusammen.
 - Das Menü *Vergleich Ein-/Ausfahrt* vergleicht die Ein- und Ausfahrtsgeschwindigkeiten mit verschiedenen Grafiken, welche die Verteilung der beiden Geschwindigkeiten darstellen. Es können höchstens 10 Standorte gleichzeitig angezeigt werden. Im Dropdown-Feld *Standorte* kann die Auswahl der Standorte verändert werden. Ohne Auswahl werden die ersten 10 Standorte angezeigt. Werden nur ein oder zwei Standorte ausgewählt, so kann auch ein X-Y-Plot der beiden Geschwindigkeiten erstellt werden. Dieser erlaubt es, weitere Informationen aus den Daten zu ziehen, z.B. wird deutlich, dass bestimmte Geschwindigkeiten nie gemessen werden, wie z.B. 21 und 22 km/h bei der Einfahrt und 21 km/h bei der Ausfahrt.
-- Das Menü *Analyse Standort* stellt verschiedene Informationen zur Analyse eines einzelnen Standorts, der im Filter *Standort* ausgewählt werden kann, zusammen. Neben dem Vergleich von Ein- und Ausfahrt wird auch ein Vergleich zwischen den Kennzahlen in den verschiedenen Phasen angezeigt. In einem statistischen Signifikanztest wird berechnet, ob eine Ab- oder Zunahme der Geschwindigkeit statistisch signifikant ist und somit einen wahrscheinlichen Verursacher gibt. Im Betrieb ist dies die Smiley-Anzeige, die die Schnellfahrenden zum Abbremsen motiviert. Signifikante Abnahmen und sogar Zunahmen der Ausfahrtsgeschwindigkeit in der Phase Vor- und Nachmessung sind jedoch ebenfalls sehr häufig und fast die Regel. Sie sind schwer zu erklären, da die Anzeige nicht aktiv ist.
+- Das Menü 'Analyse Standort' bietet umfassende Informationen zur Analyse eines spezifischen Standorts. Nutzer können einen Standort über den Filter 'Standort' auswählen. Das Menü ermöglicht nicht nur den Vergleich von Ein- und Ausfahrtsgeschwindigkeiten, sondern stellt auch einen Vergleich der Kennzahlen in verschiedenen Phasen dar. Ein zentraler Bestandteil ist der statistische Signifikanztest, der berechnet, ob eine Veränderung der Geschwindigkeit – sei es eine Ab- oder Zunahme – statistisch signifikant ist. Dies hilft zu ermitteln, ob es eine wahrscheinliche Ursache für die Geschwindigkeitsänderung gibt. Während des Betriebs wird erwartet, dass die Smiley-Anzeige die Schnellfahrer zum Bremsen anregt. Interessanterweise zeigen sich jedoch auch signifikante Ab- und Zunahmen der Ausfahrtsgeschwindigkeit in den Phasen der Vor- und Nachmessung, was fast die Regel zu sein scheint. Diese Veränderungen sind schwieriger zu erklären, da in diesen Phasen die Anzeige nicht aktiv ist. Eine mögliche Erklärung könnte sein, dass allein die Anwesenheit der Smiley-Messanlage – auch wenn sie nicht aktiv ist – bei den Fahrerinnen und Fahrern eine Geschwindigkeitsreduktion bewirkt.
 """
 
 STAT_TABLE_INFO = """
@@ -69,20 +69,16 @@ STAT_COLUMNS_DESCRIPTION = """
 | ist_uebertretung_ausfahrt_pct  | Prozent Übertretungen nach Smiley-Anzeige |
 """
 
-WILCOXON_DESCRIPTION = """
+H0_INTRO = """
+Statistische Signifikanztests sind ein beliebtes Instrument, um zu untersuchen, ob Unterschiede zwischen zwei abhängigen Messreihen - in unserem Fall die Geschwindigkeit vor und nach der Durchfahrt an einem Messpunkt - rein zufällig sind oder statistisch signifikant. Dabei kommen Nullhypothesen-Tests zum Einsatz, welche die Annahme überprüfen, dass Unterschiede zwischen den Messreihen zufällig sind. Diese Annahme wird anhand der Daten entweder bestätigt oder widerlegt. Die Nullhypothese wird beibehalten, wenn die Wahrscheinlichkeit für zufällige Unterschiede größer als 5% ist. Liegt diese Wahrscheinlichkeit unter 5%, wird die Nullhypothese verworfen, was auf statistisch signifikante Unterschiede hinweist. Diese Wahrscheinlichkeit wird als p-Wert bezeichnet. Für unsere Analyse wird der [Wilcoxon-Vorzeichen-Rang-Test](https://de.wikipedia.org/wiki/Wilcoxon-Vorzeichen-Rang-Test) verwendet. Aufgrund der Versuchsanordnung ist zu erwarten, dass die Ausfahrtsgeschwindigkeiten signifikant niedriger sind als die Einfahrtsgeschwindigkeiten, da die Fahrer auf die Geschwindigkeitsanzeige reagieren. In der Vormessung und Nachmessung hingegen sind keine signifikanten Unterschiede zu erwarten, da die Fahrer keinen systematischen Grund haben, ihre Geschwindigkeit zu ändern
+
+Die deutlichste Abnahme wird bei Fahrzeugen erwartet, bei welchen bei der Einfahrt ein 😡-Emoji angezeigt wird, da diese Fahrer durch die Anzeige direkt angesprochen werden, ihre Geschwindigkeit zu reduzieren. Um diese Annahme zu überprüfen, wurde der Signifikanztest gezielt auf ein Subset aller Messungen angewendet, nämlich nur für Durchfahrten, bei denen die Einfahrts- die Höchstgeschwindigkeit überstieg. Es wird erwartet, dass in diesen Fällen während der Betriebsphase bei der Ausfahrt eine signifikant geringere Geschwindigkeit gemessen wird, während in den Vor- und Nachmessungen keine signifikanten Unterschiede festgestellt werden sollten, da hier kein direkter Anreiz zur Geschwindigkeitsreduktion gegeben ist.
 """
 
 H0_RESULT_ALL = """
-In der Phase {0} ist der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Ein [Wilcoxon-Vorzeichen-Rang-Test](https://de.wikipedia.org/wiki/Wilcoxon-Vorzeichen-Rang-Test) mit Alpha = 0.05 wurde durchgeführt, um die statistische Relevanz der Geschwindigkeitsunterschiede zu überprüfen. Die Nullhypothese (Annahme: kein Unterschied zwischen Einfahrts- und Ausfahrtsgeschwindigkeit) wird {3}, somit {4}.
+In der Phase {0} ist der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Der Wilcoxon-Vorzeichen-Rang-Test ergibt einen p-Wert von {3: .3e}. Die Nullhypothese wird {4}{5}, somit {6}.
 """
 
 H0_RESULT_EXC = """
-Ein zweiter Signifikanztest wurde durchgeführt mit einer Auswahl der Messungen, bei denen die Einfahrtsgeschwindigkeit die erlaubte Höchstgeschwindigkeit überschreitet. {0} Der Median der Ausfahrtsgeschwindigkeit ist um {1: .1f} km/h {2} als der Median der Einfahrtsgeschwindigkeit. Die Nullhypothese des Wilcoxon-Vorzeichen-Rang-Test wird {3}, somit {4}.
-"""
-
-H0_RESULT_EXC_EXPECTED1 = """
-Hier wird im Betrieb ein 😡-Emoji angezeigt, was die Fahrer zum abbremsen motivieren soll. Es wird eine signifikante Geschwindigkeitsabnahme erwartet.
-"""
-H0_RESULT_EXC_EXPECTED2 = """
-Bei Vor und Nachmessungsphase kann der Trend zu- oder abnehmend- und sollte in der Regel nicht signifikant sein, da es keinen Grund gibt, bei der Durchfahrt am Standort systematisch zu bremsen oder zu beschleunigen.
+Ein zweiter Signifikanztest wurde durchgeführt mit einer Auswahl der Messungen, bei denen die Einfahrtsgeschwindigkeit die erlaubte Höchstgeschwindigkeit überschritt. Das Mittel der Ausfahrtsgeschwindigkeit ist um {0: .1f} km/h {1} als der Median der Einfahrtsgeschwindigkeit. Die Nullhypothese des Wilcoxon-Vorzeichen-Rang-Test wird {2}, somit {3}.
 """

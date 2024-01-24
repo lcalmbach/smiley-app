@@ -17,10 +17,9 @@ from texts import (
     STAT_TEXT,
     STAT_COLUMNS_DESCRIPTION,
     STAT_TABLE_INFO,
+    H0_INTRO,
     H0_RESULT_ALL,
-    H0_RESULT_EXC,
-    H0_RESULT_EXC_EXPECTED1,
-    H0_RESULT_EXC_EXPECTED2,
+    H0_RESULT_EXC
 )
 from utils import optimize_dataframe_types, enum2dict
 
@@ -708,6 +707,10 @@ class Smiley:
                 )
 
         def execute_h0_test(data: pd.DataFrame):
+            # only show once
+            if phase == Phase.VORMESSUNG.value:
+                with st.expander("Einführung", expanded=False):
+                    st.markdown(H0_INTRO)
             st.markdown(f"#### {phase}")
             mean_einfahrt = data["v_einfahrt"].mean()
             mean_ausfahrt = data["v_ausfahrt"].mean()
@@ -721,9 +724,10 @@ class Smiley:
                 if h0_rejected
                 else f"ist die {adj}e Ausfahrtsgeschwindigkeit nicht signifikant."
             )
+            emphasis = "deutlich " if p_value < 0.01 else ""
             st.markdown(
                 H0_RESULT_ALL.format(
-                    phase, mean_ausfahrt - mean_einfahrt, adj, result, result_long
+                    phase, mean_ausfahrt - mean_einfahrt, adj, p_value, emphasis,result, result_long
                 )
             )
 
@@ -732,11 +736,6 @@ class Smiley:
             mean_ausfahrt = data["v_ausfahrt"].mean()
             t_stat, p_value, h0_rejected = self.wilcoxon_test(
                 data, "v_einfahrt", "v_ausfahrt"
-            )
-            expected = (
-                H0_RESULT_EXC_EXPECTED1
-                if phase == Phase.BETRIEB.value
-                else H0_RESULT_EXC_EXPECTED2
             )
             adj = "höher" if mean_einfahrt < mean_ausfahrt else "tiefer"
             result = "abgelehnt" if h0_rejected else "angenommen"
@@ -747,7 +746,6 @@ class Smiley:
             )
             st.markdown(
                 H0_RESULT_EXC.format(
-                    expected,
                     mean_ausfahrt - mean_einfahrt,
                     adj,
                     result,
