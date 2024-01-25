@@ -134,7 +134,7 @@ class Smiley:
                     "Standorte",
                     options=self.station_options.keys(),
                     format_func=lambda x: self.station_options[x],
-                    default=filtered_stations["id_standort"].iloc[0],
+                    # default=filtered_stations["id_standort"].iloc[0],
                     help="wähle ein oder mehrere Standorte, die angezeigt werden sollen. Wenn keine Standorte ausgewählt werden, werden alle Standorte angezeigt.",
                 )
                 if sel_stations:

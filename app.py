@@ -3,10 +3,10 @@ from streamlit_option_menu import option_menu
 from smiley import Smiley
 
 
-__version__ = "0.0.10"
+__version__ = "0.0.11"
 __author__ = "Lukas Calmbach"
 __author_email__ = "lcalmbach@gmail.com"
-VERSION_DATE = "2023-24-01"
+VERSION_DATE = "2023-25-01"
 APP_NAME = "smiley-app"
 GIT_REPO = "https://github.com/lcalmbach/smiley-app"
 SOURCE_URL = "https://data.bs.ch/explore/dataset/100268"
